@@ -59,5 +59,22 @@ with col6:
 # Tabela completa
 st.subheader("📄 Tabela Completa dos Jogadores")
 st.dataframe(df_filtrado.sort_values("Pontos Média", ascending=False), use_container_width=True)
+# Gráfico de Custo-Benefício
+st.subheader("💸 Análise de Custo-Benefício")
+
+fig_cb = px.scatter(
+    df_filtrado,
+    x="Preço (C$)",
+    y="Pontos Média",
+    size="Custo-Benefício",
+    color="Custo-Benefício",
+    hover_name="Nome",
+    title="Custo-Benefício: Pontos por Cartoleta",
+    size_max=15,
+    color_continuous_scale="Viridis"
+)
+
+st.plotly_chart(fig_cb, use_container_width=True)
+
 
 st.caption("Desenvolvido por Carlos Willian - Cartola FC 2025")
