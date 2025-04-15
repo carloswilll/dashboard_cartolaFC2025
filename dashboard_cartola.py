@@ -125,7 +125,7 @@ df[colunas_presentes] = df[colunas_presentes].fillna(0)
 
 # Gráfico de Custo-Benefício
 st.subheader("💸 Análise de Custo-Benefício")
-st.write(df_cb.head())
+
 fig_cb = px.scatter(
     df_cb,
     x="Preço (C$)",
