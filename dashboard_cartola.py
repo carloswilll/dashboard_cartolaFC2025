@@ -60,10 +60,14 @@ with col6:
 st.subheader("📄 Tabela Completa dos Jogadores")
 st.dataframe(df_filtrado.sort_values("Pontos Média", ascending=False), use_container_width=True)
 # Gráfico de Custo-Benefício
+
+# Remover registros com valores ausentes nas colunas usadas no gráfico
+df_cb = df_filtrado.dropna(subset=["Preço (C$)", "Pontos Média", "Custo-Benefício", "Nome"])
+
 st.subheader("💸 Análise de Custo-Benefício")
 
 fig_cb = px.scatter(
-    df_filtrado,
+    df_cb,
     x="Preço (C$)",
     y="Pontos Média",
     size="Custo-Benefício",
@@ -75,6 +79,7 @@ fig_cb = px.scatter(
 )
 
 st.plotly_chart(fig_cb, use_container_width=True)
+
 
 
 st.caption("Desenvolvido por Carlos Willian - Cartola FC 2025")
