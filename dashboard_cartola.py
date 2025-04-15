@@ -61,15 +61,13 @@ st.subheader("📄 Tabela Completa dos Jogadores")
 st.dataframe(df_filtrado.sort_values("Pontos Média", ascending=False), use_container_width=True)
 # Gráfico de Custo-Benefício
 
-# Remover registros com valores ausentes nas colunas usadas no gráfico
-df_cb = df_filtrado.dropna(subset=["Preço (C$)", "Pontos Média", "Custo-Benefício", "Nome"])
+df["Desarmes"] = df["Desarmes"].fillna(0)
 
+# Gráfico de Custo-Benefício
 st.subheader("💸 Análise de Custo-Benefício")
 
-st.write(df_cb.head())
-
 fig_cb = px.scatter(
-    df_cb,
+    df_filtrado,
     x="Preço (C$)",
     y="Pontos Média",
     size="Custo-Benefício",
