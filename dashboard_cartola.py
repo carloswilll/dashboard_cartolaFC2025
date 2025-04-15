@@ -108,6 +108,27 @@ st.dataframe(
 )
 
 
+# Remover registros com valores ausentes nas colunas usadas no gráfico
+df_cb = df_filtrado.dropna(subset=["Preço (C$)", "Pontos Média", "Custo-Benefício", "Nome"])
+
+# Gráfico de Custo-Benefício
+st.subheader("💸 Análise de Custo-Benefício")
+
+fig_cb = px.scatter(
+    df_cb,
+    x="Preço (C$)",
+    y="Pontos Média",
+    size="Custo-Benefício",
+    color="Custo-Benefício",
+    hover_name="Nome",
+    title="Custo-Benefício: Pontos por Cartoleta",
+    size_max=15,
+    color_continuous_scale="Viridis"
+)
+
+st.plotly_chart(fig_cb, use_container_width=True)
+
+
 
 st.subheader("💡 Time Ideal com até 120 C$")
 
