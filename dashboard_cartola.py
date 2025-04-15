@@ -113,7 +113,7 @@ df_cb = df_filtrado.dropna(subset=["Preço (C$)", "Pontos Média", "Custo-Benef�
 
 # Gráfico de Custo-Benefício
 st.subheader("💸 Análise de Custo-Benefício")
-
+st.write(df_cb.head())
 fig_cb = px.scatter(
     df_cb,
     x="Preço (C$)",
