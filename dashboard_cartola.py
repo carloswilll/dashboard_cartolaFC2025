@@ -108,8 +108,8 @@ st.dataframe(
 )
 
 
-# Remover registros com valores ausentes nas colunas usadas no gráfico
-df_cb = df_filtrado.dropna(subset=["Preço (C$)", "Pontos Média", "Custo-Benefício", "Nome"])
+df["Desarmes"] = df["Desarmes"].fillna(0)
+
 
 # Gráfico de Custo-Benefício
 st.subheader("💸 Análise de Custo-Benefício")
