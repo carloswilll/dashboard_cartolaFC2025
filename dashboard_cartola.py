@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import pulp
+
 
 st.set_page_config(page_title="Dashboard Cartola 2025", layout="wide")
 
@@ -129,36 +129,6 @@ fig_cb = px.scatter(
 st.plotly_chart(fig_cb, use_container_width=True)
 
 
-
-st.subheader("💡 Time Ideal com até 120 C$")
-
-if st.button("🔍 Montar Time Ideal"):
-    df_otim = df_filtrado[df_filtrado["Preço (C$)"] > 0].copy()
-    df_otim = df_otim[df_otim["Pontos Média"].notnull()].copy()
-    df_otim.reset_index(drop=True, inplace=True)
-
-    model = pulp.LpProblem("Escalar_Time", pulp.LpMaximize)
-    df_otim["Escolhido"] = [pulp.LpVariable(f"jog_{i}", cat=pulp.LpBinary) for i in df_otim.index]
-
-    model += pulp.lpSum(df_otim["Pontos Média"] * df_otim["Escolhido"])
-    model += pulp.lpSum(df_otim["Preço (C$)"] * df_otim["Escolhido"]) <= 120
-
-    posicoes_time = {"G": 1, "Z": 2, "L": 2, "M": 3, "A": 3}
-    for pos, qtd in posicoes_time.items():
-        model += pulp.lpSum(df_otim[df_otim["Posição"] == pos]["Escolhido"]) == qtd
-
-    model += pulp.lpSum(df_otim["Escolhido"]) == 11
-    model.solve()
-
-    time_ideal = df_otim[[v.varValue() == 1 for v in df_otim["Escolhido"]]].copy()
-
-    if not time_ideal.empty:
-        total_custo = time_ideal["Preço (C$)"].sum()
-        total_pontos = time_ideal["Pontos Média"].sum()
-        st.success(f"✅ Time montado com sucesso! Custo total: {total_custo:.2f} C$ | Pontos estimados: {total_pontos:.2f}")
-        st.dataframe(time_ideal[["Posição", "Nome", "Clube", "Preço (C$)", "Pontos Média"]].sort_values("Posição"))
-    else:
-        st.warning("❌ Não foi possível montar um time dentro do orçamento atual.")
 
 
 
