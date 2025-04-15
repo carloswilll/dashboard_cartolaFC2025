@@ -108,7 +108,19 @@ st.dataframe(
 )
 
 
-df["Desarmes"] = df["Desarmes"].fillna(0)
+colunas_numericas = [
+    "DS", "G", "A", "SG", "FS", "FF", "FD", "FT", "PS", "DE", "DP",
+    "GC", "CV", "CA", "GS", "PP", "PC", "FC", "I"
+]
+
+# Remove espaços dos nomes de colunas, se houver
+df.columns = df.columns.str.strip()
+
+# Garante que todas essas colunas existam no DataFrame antes de aplicar
+colunas_presentes = [col for col in colunas_numericas if col in df.columns]
+
+# Preenche os nulos com 0 nas colunas válidas
+df[colunas_presentes] = df[colunas_presentes].fillna(0)
 
 
 # Gráfico de Custo-Benefício
