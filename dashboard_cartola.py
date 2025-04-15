@@ -127,7 +127,7 @@ df[colunas_presentes] = df[colunas_presentes].fillna(0)
 st.subheader("💸 Análise de Custo-Benefício")
 
 fig_cb = px.scatter(
-    df_cb,
+    df_filtrado,
     x="Preço (C$)",
     y="Pontos Média",
     size="Custo-Benefício",
@@ -139,6 +139,7 @@ fig_cb = px.scatter(
 )
 
 st.plotly_chart(fig_cb, use_container_width=True)
+
 
 
 
