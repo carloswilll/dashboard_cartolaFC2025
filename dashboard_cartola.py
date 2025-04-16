@@ -66,5 +66,30 @@ if nome_jogador:
 
 st.dataframe(df_filtrado.sort_values("Pontos Média", ascending=False), use_container_width=True)
 
+# Métricas adicionais
+st.subheader("📈 Análises Avançadas")
+
+# 1. Relação entre Scouts e Pontos
+scouts_colunas = [col for col in df.columns if col not in ["Jogador", "Clube", "Posição", "Preço (C$)", "Pontos Média"]]
+scout_escolhido = st.selectbox("Escolha um Scout para análise de correlação com Pontos Média:", scouts_colunas)
+
+fig_cb = px.scatter(df_filtrado, x=scout_escolhido, y="Pontos Média", color="Posição",
+                    title=f"Relação entre {scout_escolhido} e Pontos Média",
+                    labels={scout_escolhido: scout_escolhido, "Pontos Média": "Pontos"})
+st.plotly_chart(fig_cb, use_container_width=True)
+
+# 2. Ranking por Eficiência em Scouts
+st.markdown("### 🧠 Ranking por Eficiência nos Scouts")
+scout_eficiencia = scout_escolhido
+
+if scout_eficiencia in df_filtrado.columns:
+    df_filtrado[f"Eficiência {scout_eficiencia}"] = df_filtrado["Pontos Média"] / df_filtrado[scout_eficiencia].replace(0, 0.1)
+    st.dataframe(df_filtrado.sort_values(f"Eficiência {scout_eficiencia}", ascending=False)[["Jogador", scout_eficiencia, "Pontos Média", f"Eficiência {scout_eficiencia}"]].head(10))
+
+# 3. Projeção de Valorização
+st.markdown("### 💹 Projeção de Valorização")
+df_filtrado["Projeção Valorização"] = df_filtrado["Pontos Média"] * df_filtrado["Custo-Benefício"]
+st.dataframe(df_filtrado.sort_values("Projeção Valorização", ascending=False)[["Jogador", "Preço (C$)", "Pontos Média", "Custo-Benefício", "Projeção Valorização"]].head(10))
+
 st.caption("Desenvolvido por Carlos Willian - Cartola FC 2025")
 
