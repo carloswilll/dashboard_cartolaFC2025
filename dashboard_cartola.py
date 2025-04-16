@@ -44,39 +44,26 @@ with col4:
     st.markdown("**Por Custo-Benefício**")
     st.dataframe(df_filtrado.sort_values("Custo-Benefício", ascending=False).head(10))
 
-# Ranking por Scout específico
-st.subheader("📈 Ranking Personalizado por Scout")
+# Gráficos
+st.subheader("📊 Distribuição dos Jogadores")
 col5, col6 = st.columns(2)
 
 with col5:
-    scout_colunas = [col for col in df_filtrado.columns if col not in ["Nome", "Posição", "Clube", "Preço (C$)", "Pontos Média", "Custo-Benefício"]]
-    scout_escolhido = st.selectbox("Escolha o Scout", scout_colunas)
-
-with col6:
-    posicoes_scout = df["Posição"].unique().tolist()
-    posicao_scout_selecionada = st.multiselect("Filtrar por Posição no Ranking", posicoes_scout, default=posicoes_scout)
-
-df_ranking_scout = df_filtrado[df_filtrado["Posição"].isin(posicao_scout_selecionada)].copy()
-
-df_ranking_scout = df_ranking_scout[["Nome", "Posição", "Clube", "Preço (C$)", scout_escolhido]]
-df_ranking_scout = df_ranking_scout.sort_values(scout_escolhido, ascending=False).head(10)
-
-st.dataframe(df_ranking_scout)
-
-# Gráficos
-st.subheader("📊 Distribuição dos Jogadores")
-col7, col8 = st.columns(2)
-
-with col7:
     fig = px.histogram(df_filtrado, x="Pontos Média", nbins=20, title="Distribuição da Média de Pontos")
     st.plotly_chart(fig, use_container_width=True)
 
-with col8:
+with col6:
     fig = px.histogram(df_filtrado, x="Preço (C$)", nbins=20, title="Distribuição dos Preços")
     st.plotly_chart(fig, use_container_width=True)
 
-# Tabela completa
+# Tabela completa com filtro de nome
 st.subheader("📄 Tabela Completa dos Jogadores")
+
+nome_jogador = st.text_input("🔍 Buscar jogador pelo nome")
+
+if nome_jogador:
+    df_filtrado = df_filtrado[df_filtrado["Jogador"].str.contains(nome_jogador, case=False, na=False)]
+
 st.dataframe(df_filtrado.sort_values("Pontos Média", ascending=False), use_container_width=True)
 
 st.caption("Desenvolvido por Carlos Willian - Cartola FC 2025")
