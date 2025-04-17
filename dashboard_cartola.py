@@ -54,28 +54,47 @@ if nome_jogador:
 
 st.dataframe(df_filtrado.sort_values("Pontos Média", ascending=False), use_container_width=True)
 
-# Métricas adicionais
-# 1. Relação entre Scouts e Pontos
-scouts_colunas = [col for col in df.columns if col not in ["Nome", "Clube", "Posição", "Preço (C$)", "Pontos Média"]]
-scout_escolhido = st.selectbox("Escolha um Scout para análise de correlação com Pontos Média:", scouts_colunas)
+# Nova Métrica: Desempenho por Scout Específico por Posição
+st.subheader("📌 Desempenho por Scout por Posição")
+scouts_disponiveis = ['DS', 'G', 'A', 'SG', 'FS', 'FF', 'FD', 'FT', 'PS', 'DE', 'DP', 'GC', 'CV', 'CA', 'GS', 'PP', 'PC', 'FC', 'I']
+scout_escolhido = st.selectbox("Escolha o Scout", scouts_disponiveis)
 
-fig_cb = px.scatter(df_filtrado, x=scout_escolhido, y="Pontos Média", color="Posição",
-                    title=f"Relação entre {scout_escolhido} e Pontos Média",
-                    labels={scout_escolhido: scout_escolhido, "Pontos Média": "Pontos"})
-st.plotly_chart(fig_cb, use_container_width=True)
+df_scout_posicao = df.groupby("Posição")[scout_escolhido].mean().reset_index()
+fig_scout_posicao = px.bar(df_scout_posicao, x="Posição", y=scout_escolhido, color="Posição", title=f"Média de {scout_escolhido} por Posição")
+st.plotly_chart(fig_scout_posicao, use_container_width=True)
 
-# 2. Ranking por Eficiência em Scouts
-st.markdown("### 🧠 Ranking por Eficiência nos Scouts")
-scout_eficiencia = scout_escolhido
+# Nova Métrica: Análise por Perfil de Jogador
+st.subheader("🔎 Análise por Perfil de Jogador")
+perfil = st.selectbox("Escolha o perfil de jogador", ["Finalizadores", "Criadores", "Defensores"])
 
-if scout_eficiencia in df_filtrado.columns:
-    df_filtrado[f"Eficiência {scout_eficiencia}"] = df_filtrado["Pontos Média"] / df_filtrado[scout_eficiencia].replace(0, 0.1)
-    st.dataframe(df_filtrado.sort_values(f"Eficiência {scout_eficiencia}", ascending=False)[["Nome", scout_eficiencia, "Pontos Média", f"Eficiência {scout_eficiencia}"]].head(10))
+if perfil == "Finalizadores":
+    scouts = ["G", "FF", "FD", "FT"]
+elif perfil == "Criadores":
+    scouts = ["A", "FS", "PS"]
+else:
+    scouts = ["DS", "SG", "DE", "DP"]
 
-# 3. Projeção de Valorização
-st.markdown("### 📉 Projeção de Valorização")
-df_filtrado["Projeção Valorização"] = df_filtrado["Pontos Média"] * df_filtrado["Custo-Benefício"]
-st.dataframe(df_filtrado.sort_values("Projeção Valorização", ascending=False)[["Nome", "Preço (C$)", "Pontos Média", "Custo-Benefício", "Projeção Valorização"]].head(10))
+df["Soma Perfil"] = df[scouts].sum(axis=1)
+st.dataframe(df.sort_values("Soma Perfil", ascending=False)[["Nome", "Posição", "Clube", "Soma Perfil"] + scouts].head(10), use_container_width=True)
+
+# Nova Métrica: Simulador de Time Ideal com Cartoletas
+st.subheader("📋 Simulador de Time Ideal com até 120 C$")
+orcamento = 120
+formacao = {"GOL": 1, "LAT": 2, "ZAG": 2, "MEI": 3, "ATA": 3}
+time_ideal = pd.DataFrame()
+
+for pos, qtd in formacao.items():
+    jogadores_pos = df[df["Posição"] == pos].copy()
+    jogadores_pos["Custo-Benefício"] = jogadores_pos["Pontos Média"] / jogadores_pos["Preço (C$)"].replace(0, 0.1)
+    melhores = jogadores_pos.sort_values("Custo-Benefício", ascending=False).head(qtd)
+    time_ideal = pd.concat([time_ideal, melhores])
+
+if time_ideal["Preço (C$)"].sum() <= orcamento:
+    st.success(f"💰 Total gasto: {time_ideal['Preço (C$)'].sum():.2f} C$")
+else:
+    st.warning(f"⚠️ Total acima do orçamento: {time_ideal['Preço (C$)'].sum():.2f} C$")
+
+st.dataframe(time_ideal[["Nome", "Posição", "Clube", "Preço (C$)", "Pontos Média", "Custo-Benefício"]], use_container_width=True)
 
 st.caption("Desenvolvido por Carlos Willian - Cartola FC 2025")
 
