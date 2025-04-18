@@ -14,7 +14,7 @@ def carregar_dados():
 
 df = carregar_dados()
 
-st.title("Dashboard de Scouts - Cartola FC 2025")
+st.title("\U0001F3DF️ Dashboard de Scouts - Cartola FC 2025")
 
 aba1, aba2, aba3 = st.tabs(["🔎 Análises Gerais", "🧮 Time Ideal", "🔕️ Confrontos"])
 
@@ -35,14 +35,11 @@ with aba1:
         (df["Clube"].isin(clube_selecionado))
     ].copy()
 
-    # Garantir que Preço é numérico
     df_filtrado["Preço (C$)"] = pd.to_numeric(df_filtrado["Preço (C$)"], errors="coerce").fillna(0.0)
-
-    # Criar métrica de custo-benefício
     df_filtrado["Custo-Benefício"] = df_filtrado["Pontos Média"] / df_filtrado["Preço (C$)"].replace(0, 0.1)
 
     # Rankings
-    st.subheader(" Top Jogadores")
+    st.subheader("\U0001F3C6 Top Jogadores")
     col3, col4 = st.columns(2)
 
     with col3:
@@ -54,33 +51,33 @@ with aba1:
         st.dataframe(df_filtrado.sort_values("Custo-Benefício", ascending=False).head(10))
 
     # Tabela completa com filtro de nome
-    st.subheader("Tabela Completa dos Jogadores")
-
-    nome_jogador = st.text_input("Buscar jogador pelo nome")
-
+    st.subheader("\U0001F4C4 Tabela Completa dos Jogadores")
+    nome_jogador = st.text_input("\U0001F50D Buscar jogador pelo nome")
     if nome_jogador:
         df_filtrado = df_filtrado[df_filtrado["Nome"].str.contains(nome_jogador, case=False, na=False)]
-
     st.dataframe(df_filtrado.sort_values("Pontos Média", ascending=False), use_container_width=True)
 
-    # Análise por perfil de jogador (Scouts Ofensivos e Defensivos)
-    st.subheader(" Análise por Perfil de Jogador")
-    tipo_scout = st.radio("Escolha o tipo de scout:", ["Ofensivos", "Defensivos"])
+    # Análise por Perfil de Jogador - Separado em duas tabelas
+    st.subheader("\U0001F4CA Análise por Perfil de Jogador")
 
-    if tipo_scout == "Ofensivos":
-        scouts_ofensivos = ["G", "A", "FS", "FF", "FD", "FT", "PS"]
-        for scout in scouts_ofensivos:
-            df_filtrado[scout] = pd.to_numeric(df_filtrado[scout], errors="coerce").fillna(0)
-        df_filtrado["Score Ofensivo"] = df_filtrado[scouts_ofensivos].sum(axis=1)
-        resultado = df_filtrado.sort_values("Score Ofensivo", ascending=False).head(10)
-    else:
-        scouts_defensivos = ["SG", "DS", "DE", "DP"]
-        for scout in scouts_defensivos:
-            df_filtrado[scout] = pd.to_numeric(df_filtrado[scout], errors="coerce").fillna(0)
-        df_filtrado["Score Defensivo"] = df_filtrado[scouts_defensivos].sum(axis=1)
-        resultado = df_filtrado.sort_values("Score Defensivo", ascending=False).head(10)
+    scouts_ofensivos = ["G", "A", "FS", "FF", "FD", "FT", "PS"]
+    scouts_defensivos = ["SG", "DS", "DE", "DP"]
 
-    st.dataframe(resultado)
+    for scout in scouts_ofensivos + scouts_defensivos:
+        if scout in df_filtrado.columns:
+            df_filtrado[scout] = pd.to_numeric(df_filtrado[scout], errors="coerce").fillna(0)
+
+    df_filtrado["Score Ofensivo"] = df_filtrado[[s for s in scouts_ofensivos if s in df_filtrado.columns]].sum(axis=1)
+    df_filtrado["Score Defensivo"] = df_filtrado[[s for s in scouts_defensivos if s in df_filtrado.columns]].sum(axis=1)
+
+    col5, col6 = st.columns(2)
+    with col5:
+        st.markdown("**Top 10 - Scouts Ofensivos**")
+        st.dataframe(df_filtrado.sort_values("Score Ofensivo", ascending=False)[["Nome", "Clube", "Posição", "Score Ofensivo"]].head(10))
+
+    with col6:
+        st.markdown("**Top 10 - Scouts Defensivos**")
+        st.dataframe(df_filtrado.sort_values("Score Defensivo", ascending=False)[["Nome", "Clube", "Posição", "Score Defensivo"]].head(10))
 
     with st.expander("📘 Dicionário de Scouts"):
         st.markdown("""
