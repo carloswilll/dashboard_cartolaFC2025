@@ -1,22 +1,24 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import requests
-from datetime import datetime, timedelta
-import pytz
 
 st.set_page_config(page_title="Dashboard Cartola 2025", layout="wide")
 
 # Carregar os dados
 @st.cache_data
 def carregar_dados():
-    return pd.read_csv("scouts_jogadores.csv")
+    df = pd.read_csv("scouts_jogadores.csv")
+    return df.convert_dtypes().infer_objects()
 
 df = carregar_dados()
+df["Preço (C$)"] = pd.to_numeric(df["Preço (C$)"], errors="coerce").fillna(0.0)
+df["Pontos Média"] = pd.to_numeric(df["Pontos Média"], errors="coerce").fillna(0.0)
+df["Custo-Benefício"] = df["Pontos Média"] / df["Preço (C$)"].replace(0, 0.1)
 
 st.title("\U0001F3DF️ Dashboard de Scouts - Cartola FC 2025")
 
-aba1, aba2, aba3 = st.tabs(["🔎 Análises Gerais", "🧮 Time Ideal", "🔕️ Confrontos"])
+# Apenas uma aba ativa agora
+aba1 = st.container()
 
 with aba1:
     # Filtros
@@ -82,20 +84,25 @@ with aba1:
         st.dataframe(df_filtrado.sort_values("Score Defensivo", ascending=False)[["Nome", "Clube", "Posição", "Score Defensivo"]].head(10))
 
     # Análise sem G/A ou SG por posição
-    st.subheader("📉 Análise Sem Scouts-Chave")
+    st.subheader("\U0001F4C9 Análise Sem Scouts-Chave")
+
     atac_mei_sem_ga = df_filtrado[(df_filtrado["Posição"].isin(["ATA", "MEI"])) & (df_filtrado["G"] == 0) & (df_filtrado["A"] == 0)]
-    def_sem_sg = df_filtrado[(df_filtrado["Posição"].isin(["ZAG", "LAT", "GOL"])) & (df_filtrado["SG"] == 0)]
+    def_lat_sem_sg = df_filtrado[(df_filtrado["Posição"].isin(["ZAG", "LAT"])) & (df_filtrado["SG"] == 0)]
+    gol_sem_sg = df_filtrado[(df_filtrado["Posição"] == "GOL") & (df_filtrado["SG"] == 0)]
 
     col7, col8 = st.columns(2)
     with col7:
-        st.markdown("**Atacantes e Meias sem Gols ou Assistências**")
+        st.markdown(f"**Atacantes e Meias sem Gols ou Assistências ({len(atac_mei_sem_ga)})**")
         st.dataframe(atac_mei_sem_ga[["Nome", "Clube", "Posição", "G", "A"]])
 
     with col8:
-        st.markdown("**Defensores e Goleiros sem SG**")
-        st.dataframe(def_sem_sg[["Nome", "Clube", "Posição", "SG"]])
+        st.markdown(f"**Zagueiros e Laterais sem SG ({len(def_lat_sem_sg)})**")
+        st.dataframe(def_lat_sem_sg[["Nome", "Clube", "Posição", "SG"]])
 
-    with st.expander("📘 Dicionário de Scouts"):
+    st.markdown(f"**Goleiros sem SG ({len(gol_sem_sg)})**")
+    st.dataframe(gol_sem_sg[["Nome", "Clube", "Posição", "SG"]])
+
+    with st.expander("\U0001F4D8 Dicionário de Scouts"):
         st.markdown("""
         **J** - Jogos
 
@@ -123,67 +130,5 @@ with aba1:
         - **I** - Impedimento (-0,1)
         """)
 
-with aba2:
-    # Simulador de Time Ideal
-    st.subheader("🧮 Simulador de Time Ideal")
-    orçamento = st.number_input("Informe o valor disponível em cartoletas", min_value=10.0, max_value=200.0, value=120.0)
-
-    opcoes_formacao = {
-        "4-3-3": {"GOL": 1, "ZAG": 2, "LAT": 2, "MEI": 3, "ATA": 3},
-        "4-4-2": {"GOL": 1, "ZAG": 2, "LAT": 2, "MEI": 4, "ATA": 2},
-        "3-5-2": {"GOL": 1, "ZAG": 3, "LAT": 0, "MEI": 5, "ATA": 2},
-        "3-4-3": {"GOL": 1, "ZAG": 3, "LAT": 0, "MEI": 4, "ATA": 3}
-    }
-
-    formacao_escolhida = st.selectbox("Escolha a formação tática", list(opcoes_formacao.keys()))
-    formacao = opcoes_formacao[formacao_escolhida]
-
-    time_ideal = pd.DataFrame()
-    orçamento_disponivel = orçamento
-    faltando_posicoes = []
-
-    for posicao, qtd in formacao.items():
-        jogadores_posicao = df[df["Posição"] == posicao].sort_values("Custo-Benefício", ascending=False)
-        selecionados = pd.DataFrame()
-        for _, jogador in jogadores_posicao.iterrows():
-            if len(selecionados) < qtd and jogador["Preço (C$)"] <= orçamento_disponivel:
-                selecionados = pd.concat([selecionados, pd.DataFrame([jogador])])
-                orçamento_disponivel -= jogador["Preço (C$)"]
-        if len(selecionados) < qtd:
-            faltando_posicoes.append(posicao)
-        time_ideal = pd.concat([time_ideal, selecionados])
-
-    if not time_ideal.empty:
-        st.dataframe(time_ideal[["Nome", "Posição", "Clube", "Preço (C$)", "Pontos Média", "Custo-Benefício"]])
-        st.write(f"💰 Orçamento restante: {orçamento_disponivel:.2f} C$")
-        if faltando_posicoes:
-            st.warning(f"Não foi possível preencher todas as posições: {', '.join(faltando_posicoes)}")
-    else:
-        st.warning("Nenhum jogador selecionado para o time ideal. Verifique os filtros ou aumente o orçamento.")
-
-with aba3:
-    st.subheader("🔕 Confrontos da Rodada")
-
-    url = "https://api.cartola.globo.com/partidas"
-    try:
-        response = requests.get(url)
-        if response.status_code == 200:
-            dados = response.json()
-            partidas = dados["partidas"]
-            clubes_dict = dados.get("clubes", {})
-
-            for partida in partidas:
-                id_casa = str(partida["clube_casa_id"])
-                id_visitante = str(partida["clube_visitante_id"])
-
-                nome_casa = clubes_dict.get(id_casa, {}).get("nome", "Desconhecido")
-                nome_visitante = clubes_dict.get(id_visitante, {}).get("nome", "Desconhecido")
-
-                placar = f"{nome_casa} x {nome_visitante}"
-                st.markdown(f"- {placar}")
-        else:
-            st.error("Erro ao buscar dados da API do Cartola.")
-    except Exception as e:
-        st.error(f"Erro na requisição: {e}")
-
 st.caption("Desenvolvido por Carlos Willian - Cartola FC 2025")
+
