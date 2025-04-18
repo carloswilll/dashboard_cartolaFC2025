@@ -54,49 +54,47 @@ if nome_jogador:
 
 st.dataframe(df_filtrado.sort_values("Pontos Média", ascending=False), use_container_width=True)
 
-# Nova Métrica: Desempenho por Scout Específico por Posição
-st.subheader("📌 Desempenho por Scout por Posição")
-scouts_disponiveis = ['DS', 'G', 'A', 'SG', 'FS', 'FF', 'FD', 'FT', 'PS', 'DE', 'DP', 'GC', 'CV', 'CA', 'GS', 'PP', 'PC', 'FC', 'I']
-scout_escolhido = st.selectbox("Escolha o Scout", scouts_disponiveis)
-
-df_scout_posicao = df.groupby("Posição")[scout_escolhido].mean().reset_index()
-fig_scout_posicao = px.bar(df_scout_posicao, x="Posição", y=scout_escolhido, color="Posição", title=f"Média de {scout_escolhido} por Posição")
-st.plotly_chart(fig_scout_posicao, use_container_width=True)
-
-# Nova Métrica: Análise por Perfil de Jogador
-st.subheader("🔎 Análise por Perfil de Jogador")
-perfil = st.selectbox("Escolha o perfil de jogador", ["Finalizadores", "Criadores", "Defensores"])
+# Análise por perfil de jogador
+st.subheader("👤 Análise por Perfil de Jogador")
+perfil = st.selectbox("Escolha um perfil", ["Finalizadores", "Criadores", "Defensores"])
 
 if perfil == "Finalizadores":
-    scouts = ["G", "FF", "FD", "FT"]
+    st.dataframe(df_filtrado.sort_values("Finalizações", ascending=False).head(10))
 elif perfil == "Criadores":
-    scouts = ["A", "FS", "PS"]
-else:
-    scouts = ["DS", "SG", "DE", "DP"]
+    st.dataframe(df_filtrado.sort_values("Assistência", ascending=False).head(10))
+elif perfil == "Defensores":
+    st.dataframe(df_filtrado.sort_values("Desarmes", ascending=False).head(10))
 
-df["Soma Perfil"] = df[scouts].sum(axis=1)
-st.dataframe(df.sort_values("Soma Perfil", ascending=False)[["Nome", "Posição", "Clube", "Soma Perfil"] + scouts].head(10), use_container_width=True)
+# Simulador de Time Ideal
+st.subheader("🧮 Simulador de Time Ideal")
+orçamento = st.number_input("Informe o valor disponível em cartoletas", min_value=10.0, max_value=200.0, value=120.0)
 
-# Nova Métrica: Simulador de Time Ideal com Cartoletas
-st.subheader("📋 Simulador de Time Ideal com até 120 C$")
-orcamento = 120
-formacao = {"GOL": 1, "LAT": 2, "ZAG": 2, "MEI": 3, "ATA": 3}
+opcoes_formacao = {
+    "4-3-3": {"GOL": 1, "ZAG": 2, "LAT": 2, "MEI": 3, "ATA": 3},
+    "4-4-2": {"GOL": 1, "ZAG": 2, "LAT": 2, "MEI": 4, "ATA": 2},
+    "3-5-2": {"GOL": 1, "ZAG": 3, "LAT": 0, "MEI": 5, "ATA": 2},
+    "3-4-3": {"GOL": 1, "ZAG": 3, "LAT": 0, "MEI": 4, "ATA": 3}
+}
+
+formacao_escolhida = st.selectbox("Escolha a formação tática", list(opcoes_formacao.keys()))
+formacao = opcoes_formacao[formacao_escolhida]
+
 time_ideal = pd.DataFrame()
+orçamento_disponivel = orçamento
 
-for pos, qtd in formacao.items():
-    jogadores_pos = df[df["Posição"] == pos].copy()
-    jogadores_pos["Custo-Benefício"] = jogadores_pos["Pontos Média"] / jogadores_pos["Preço (C$)"].replace(0, 0.1)
-    melhores = jogadores_pos.sort_values("Custo-Benefício", ascending=False).head(qtd)
-    time_ideal = pd.concat([time_ideal, melhores])
+for posicao, qtd in formacao.items():
+    jogadores_posicao = df_filtrado[df_filtrado["Posição"] == posicao]
+    jogadores_posicao = jogadores_posicao.sort_values("Custo-Benefício", ascending=False).head(10)
+    selecionados = jogadores_posicao.head(qtd)
+    time_ideal = pd.concat([time_ideal, selecionados])
+    orçamento_disponivel -= selecionados["Preço (C$)"].sum()
 
-if time_ideal["Preço (C$)"].sum() <= orcamento:
-    st.success(f"💰 Total gasto: {time_ideal['Preço (C$)'].sum():.2f} C$")
+if not time_ideal.empty:
+    st.dataframe(time_ideal[["Nome", "Posição", "Clube", "Preço (C$)", "Pontos Média", "Custo-Benefício"]])
+    st.write(f"💰 Orçamento restante: {orçamento_disponivel:.2f} C$")
 else:
-    st.warning(f"⚠️ Total acima do orçamento: {time_ideal['Preço (C$)'].sum():.2f} C$")
-
-st.dataframe(time_ideal[["Nome", "Posição", "Clube", "Preço (C$)", "Pontos Média", "Custo-Benefício"]], use_container_width=True)
+    st.warning("Nenhum jogador selecionado para o time ideal. Verifique os filtros ou aumente o orçamento.")
 
 st.caption("Desenvolvido por Carlos Willian - Cartola FC 2025")
-
 
 
