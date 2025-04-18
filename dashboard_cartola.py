@@ -1,6 +1,9 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import requests
+from datetime import datetime, timedelta
+import pytz
 
 st.set_page_config(page_title="Dashboard Cartola 2025", layout="wide")
 
@@ -54,17 +57,6 @@ if nome_jogador:
 
 st.dataframe(df_filtrado.sort_values("Pontos Média", ascending=False), use_container_width=True)
 
-# Análise por perfil de jogador
-st.subheader("👤 Análise por Perfil de Jogador")
-perfil = st.selectbox("Escolha um perfil", ["Finalizadores", "Criadores", "Defensores"])
-
-if perfil == "Finalizadores":
-    st.dataframe(df_filtrado.sort_values("Finalizações", ascending=False).head(10))
-elif perfil == "Criadores":
-    st.dataframe(df_filtrado.sort_values("Assistência", ascending=False).head(10))
-elif perfil == "Defensores":
-    st.dataframe(df_filtrado.sort_values("Desarmes", ascending=False).head(10))
-
 # Simulador de Time Ideal
 st.subheader("🧮 Simulador de Time Ideal")
 orçamento = st.number_input("Informe o valor disponível em cartoletas", min_value=10.0, max_value=200.0, value=120.0)
@@ -94,6 +86,74 @@ if not time_ideal.empty:
     st.write(f"💰 Orçamento restante: {orçamento_disponivel:.2f} C$")
 else:
     st.warning("Nenhum jogador selecionado para o time ideal. Verifique os filtros ou aumente o orçamento.")
+
+# Confrontos da Rodada Atual
+st.subheader("📅 Confrontos da Rodada Atual")
+
+def obter_jogos_rodada():
+    url_rodadas = "https://api.cartolafc.globo.com/rodadas"
+    url_partidas = "https://api.cartolafc.globo.com/partidas/"
+
+    try:
+        response_rodadas = requests.get(url_rodadas)
+        response_rodadas.raise_for_status()
+        data_rodadas = response_rodadas.json()
+
+        rodada_atual = None
+        brasilia_tz = pytz.timezone('America/Sao_Paulo')
+        hoje_brasilia = datetime.now(brasilia_tz).date()
+
+        for rodada_info in data_rodadas:
+            numero_rodada = rodada_info.get('rodada_id')
+            inicio_str = rodada_info.get('inicio')
+            fim_str = rodada_info.get('fim')
+
+            if inicio_str and fim_str and numero_rodada is not None:
+                inicio_data = datetime.strptime(inicio_str[:10], '%Y-%m-%d').date()
+                fim_data = datetime.strptime(fim_str[:10], '%Y-%m-%d').date()
+
+                if inicio_data <= hoje_brasilia <= fim_data:
+                    rodada_atual = numero_rodada
+                    break
+
+        if rodada_atual:
+            url_partidas_atual = f"{url_partidas}{rodada_atual}"
+            response_partidas = requests.get(url_partidas_atual)
+            response_partidas.raise_for_status()
+            data_partidas = response_partidas.json()
+
+            if 'partidas' in data_partidas and 'clubes' in data_partidas:
+                clubes_data = data_partidas['clubes']
+                for partida in data_partidas['partidas']:
+                    clube_casa_id = str(partida.get('clube_casa_id'))
+                    clube_visitante_id = str(partida.get('clube_visitante_id'))
+
+                    time_casa = clubes_data.get(clube_casa_id, {}).get('nome', "Casa")
+                    time_visitante = clubes_data.get(clube_visitante_id, {}).get('nome', "Visitante")
+                    escudo_casa = clubes_data.get(clube_casa_id, {}).get('escudos', {}).get('60x60', "")
+                    escudo_visitante = clubes_data.get(clube_visitante_id, {}).get('escudos', {}).get('60x60', "")
+
+                    data_jogo_str = partida.get('partida_data')
+                    hora_jogo_str = partida.get('partida_hora')
+
+                    if data_jogo_str and hora_jogo_str:
+                        data_hora_str = f"{data_jogo_str} {hora_jogo_str}"
+                        data_hora_jogo = datetime.strptime(data_hora_str, '%Y-%m-%d %H:%M')
+                        data_hora_local = data_hora_jogo - timedelta(hours=3)
+                        st.markdown(f"""
+                            <div style='display: flex; align-items: center; margin-bottom: 10px;'>
+                                <img src='{escudo_casa}' style='height:30px;margin-right:5px;'>
+                                <b>{time_casa}</b>
+                                <span style='margin: 0 10px;'>x</span>
+                                <b>{time_visitante}</b>
+                                <img src='{escudo_visitante}' style='height:30px;margin-left:5px;'>
+                                <span style='margin-left: 15px;'>🕒 {data_hora_local.strftime('%d/%m %H:%M')}</span>
+                            </div>
+                        """, unsafe_allow_html=True)
+    except:
+        st.error("Erro ao carregar confrontos da rodada atual.")
+
+obter_jogos_rodada()
 
 st.caption("Desenvolvido por Carlos Willian - Cartola FC 2025")
 
