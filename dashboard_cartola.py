@@ -62,13 +62,15 @@ with aba1:
 
     scouts_ofensivos = ["G", "A", "FS", "FF", "FD", "FT", "PS"]
     scouts_defensivos = ["SG", "DS", "DE", "DP"]
+    scouts_negativos = ["GC", "CV", "CA", "GS", "PP", "PC", "FC", "I"]
 
-    for scout in scouts_ofensivos + scouts_defensivos:
+    for scout in scouts_ofensivos + scouts_defensivos + scouts_negativos:
         if scout in df_filtrado.columns:
             df_filtrado[scout] = pd.to_numeric(df_filtrado[scout], errors="coerce").fillna(0)
 
-    df_filtrado["Score Ofensivo"] = df_filtrado[[s for s in scouts_ofensivos if s in df_filtrado.columns]].sum(axis=1)
-    df_filtrado["Score Defensivo"] = df_filtrado[[s for s in scouts_defensivos if s in df_filtrado.columns]].sum(axis=1)
+    df_filtrado["Score Ofensivo"] = df_filtrado[scouts_ofensivos].sum(axis=1)
+    df_filtrado["Score Defensivo"] = df_filtrado[scouts_defensivos].sum(axis=1)
+    df_filtrado["Score Negativo"] = df_filtrado[scouts_negativos].sum(axis=1)
 
     col5, col6 = st.columns(2)
     with col5:
@@ -79,6 +81,20 @@ with aba1:
         st.markdown("**Top 10 - Scouts Defensivos**")
         st.dataframe(df_filtrado.sort_values("Score Defensivo", ascending=False)[["Nome", "Clube", "Posição", "Score Defensivo"]].head(10))
 
+    # Análise sem G/A ou SG por posição
+    st.subheader("📉 Análise Sem Scouts-Chave")
+    atac_mei_sem_ga = df_filtrado[(df_filtrado["Posição"].isin(["ATA", "MEI"])) & (df_filtrado["G"] == 0) & (df_filtrado["A"] == 0)]
+    def_sem_sg = df_filtrado[(df_filtrado["Posição"].isin(["ZAG", "LAT", "GOL"])) & (df_filtrado["SG"] == 0)]
+
+    col7, col8 = st.columns(2)
+    with col7:
+        st.markdown("**Atacantes e Meias sem Gols ou Assistências**")
+        st.dataframe(atac_mei_sem_ga[["Nome", "Clube", "Posição", "G", "A"]])
+
+    with col8:
+        st.markdown("**Defensores e Goleiros sem SG**")
+        st.dataframe(def_sem_sg[["Nome", "Clube", "Posição", "SG"]])
+
     with st.expander("📘 Dicionário de Scouts"):
         st.markdown("""
         **J** - Jogos
@@ -88,7 +104,7 @@ with aba1:
         - **G** - Gol (+8,0)
         - **A** - Assistência (+5,0)
         - **SG** - Saldo de Gols (sem sofrer gol) (+5,0)
-        - **FS** - Falta Sofrida (+0,5)
+        - **FS** - Falta Sofrida ( +0,5)
         - **FF** - Finalização para Fora (+0,8)
         - **FD** - Finalização Defendida (+1,2)
         - **FT** - Finalização na Trave (+3,0)
@@ -171,4 +187,3 @@ with aba3:
         st.error(f"Erro na requisição: {e}")
 
 st.caption("Desenvolvido por Carlos Willian - Cartola FC 2025")
-
