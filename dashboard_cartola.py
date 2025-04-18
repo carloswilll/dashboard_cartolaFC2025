@@ -14,7 +14,7 @@ def carregar_dados():
 
 df = carregar_dados()
 
-st.title("F3DF️ Dashboard de Scouts - Cartola FC 2025")
+st.title("Dashboard de Scouts - Cartola FC 2025")
 
 aba1, aba2, aba3 = st.tabs(["🔎 Análises Gerais", "🧮 Time Ideal", "🔕️ Confrontos"])
 
@@ -42,7 +42,7 @@ with aba1:
     df_filtrado["Custo-Benefício"] = df_filtrado["Pontos Média"] / df_filtrado["Preço (C$)"].replace(0, 0.1)
 
     # Rankings
-    st.subheader("F3C6 Top Jogadores")
+    st.subheader(" Top Jogadores")
     col3, col4 = st.columns(2)
 
     with col3:
@@ -53,55 +53,62 @@ with aba1:
         st.markdown("**Por Custo-Benefício**")
         st.dataframe(df_filtrado.sort_values("Custo-Benefício", ascending=False).head(10))
 
-    # Gráfico de barras: Média de Pontos por Posição
-    st.subheader("F4CA Média de Pontos por Posição")
-
-    media_por_posicao = df_filtrado.groupby("Posição")["Pontos Média"].mean().sort_values(ascending=False).reset_index()
-
-    fig = px.bar(
-        media_por_posicao,
-        x="Posição",
-        y="Pontos Média",
-        color="Posição",
-        text="Pontos Média",
-        title="Média de Pontos por Posição",
-        color_discrete_sequence=px.colors.qualitative.Set2
-    )
-    fig.update_traces(texttemplate="%{text:.2f}", textposition="outside")
-    fig.update_layout(xaxis_title=None, yaxis_title="Pontos", showlegend=False)
-
-    st.plotly_chart(fig, use_container_width=True)
-
     # Tabela completa com filtro de nome
-    st.subheader("F4C4 Tabela Completa dos Jogadores")
+    st.subheader("Tabela Completa dos Jogadores")
 
-    nome_jogador = st.text_input("F50D Buscar jogador pelo nome")
+    nome_jogador = st.text_input("Buscar jogador pelo nome")
 
     if nome_jogador:
         df_filtrado = df_filtrado[df_filtrado["Nome"].str.contains(nome_jogador, case=False, na=False)]
 
     st.dataframe(df_filtrado.sort_values("Pontos Média", ascending=False), use_container_width=True)
 
-    # Análise por perfil de jogador
-    st.subheader("F4CA Análise por Perfil de Jogador")
-    perfil = st.radio("Escolha o perfil para análise:", ["Finalizadores", "Criadores", "Defensores"])
+    # Análise por perfil de jogador (Scouts Ofensivos e Defensivos)
+    st.subheader(" Análise por Perfil de Jogador")
+    tipo_scout = st.radio("Escolha o tipo de scout:", ["Ofensivos", "Defensivos"])
 
-    if perfil == "Finalizadores":
-        df_filtrado["FD"] = pd.to_numeric(df_filtrado["FD"], errors="coerce").fillna(0)
-        df_filtrado["G"] = pd.to_numeric(df_filtrado["G"], errors="coerce").fillna(0)
-        resultado = df_filtrado.sort_values(["FD", "G"], ascending=False).head(10)
-
-    elif perfil == "Criadores":
-        df_filtrado["A"] = pd.to_numeric(df_filtrado["A"], errors="coerce").fillna(0)
-        df_filtrado["FS"] = pd.to_numeric(df_filtrado["FS"], errors="coerce").fillna(0)
-        resultado = df_filtrado.sort_values(["A", "FS"], ascending=False).head(10)
-
+    if tipo_scout == "Ofensivos":
+        scouts_ofensivos = ["G", "A", "FS", "FF", "FD", "FT", "PS"]
+        for scout in scouts_ofensivos:
+            df_filtrado[scout] = pd.to_numeric(df_filtrado[scout], errors="coerce").fillna(0)
+        df_filtrado["Score Ofensivo"] = df_filtrado[scouts_ofensivos].sum(axis=1)
+        resultado = df_filtrado.sort_values("Score Ofensivo", ascending=False).head(10)
     else:
-        df_filtrado["DS"] = pd.to_numeric(df_filtrado["DS"], errors="coerce").fillna(0)
-        df_filtrado["SG"] = pd.to_numeric(df_filtrado["SG"], errors="coerce").fillna(0)
-        resultado = df_filtrado.sort_values(["DS", "SG"], ascending=False).head(10)
+        scouts_defensivos = ["SG", "DS", "DE", "DP"]
+        for scout in scouts_defensivos:
+            df_filtrado[scout] = pd.to_numeric(df_filtrado[scout], errors="coerce").fillna(0)
+        df_filtrado["Score Defensivo"] = df_filtrado[scouts_defensivos].sum(axis=1)
+        resultado = df_filtrado.sort_values("Score Defensivo", ascending=False).head(10)
 
     st.dataframe(resultado)
+
+    with st.expander("📘 Dicionário de Scouts"):
+        st.markdown("""
+        **J** - Jogos
+
+        **SCOUTS POSITIVOS**
+        - **DS** - Desarme (+1,5)
+        - **G** - Gol (+8,0)
+        - **A** - Assistência (+5,0)
+        - **SG** - Saldo de Gols (sem sofrer gol) (+5,0)
+        - **FS** - Falta Sofrida (+0,5)
+        - **FF** - Finalização para Fora (+0,8)
+        - **FD** - Finalização Defendida (+1,2)
+        - **FT** - Finalização na Trave (+3,0)
+        - **PS** - Pênalti Sofrido (+1,0)
+        - **DE** - Defesa (+1,3)
+        - **DP** - Defesa de Pênalti (+7,0)
+
+        **SCOUTS NEGATIVOS**
+        - **GC** - Gol Contra (-3,0)
+        - **CV** - Cartão Vermelho (-3,0)
+        - **CA** - Cartão Amarelo (-1,0)
+        - **GS** - Gol Sofrido (-1,0)
+        - **PP** - Pênalti Perdido (-4,0)
+        - **PC** - Pênalti Cometido (-1,0)
+        - **FC** - Falta Cometida (-0,3)
+        - **I** - Impedimento (-0,1)
+        """)
 
 with aba2:
     # Simulador de Time Ideal
@@ -153,8 +160,8 @@ with aba3:
             clubes_dict = dados.get("clubes", {})
 
             for partida in partidas:
-                id_casa = str(partida.get("clube_casa_id"))
-                id_visitante = str(partida.get("clube_visitante_id"))
+                id_casa = str(partida["clube_casa_id"])
+                id_visitante = str(partida["clube_visitante_id"])
 
                 nome_casa = clubes_dict.get(id_casa, {}).get("nome", "Desconhecido")
                 nome_visitante = clubes_dict.get(id_visitante, {}).get("nome", "Desconhecido")
@@ -167,3 +174,4 @@ with aba3:
         st.error(f"Erro na requisição: {e}")
 
 st.caption("Desenvolvido por Carlos Willian - Cartola FC 2025")
+
