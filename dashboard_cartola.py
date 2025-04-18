@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from io import BytesIO
 
 st.set_page_config(page_title="Dashboard Cartola 2025", layout="wide")
 
@@ -8,6 +9,7 @@ st.set_page_config(page_title="Dashboard Cartola 2025", layout="wide")
 @st.cache_data
 def carregar_dados():
     df = pd.read_csv("scouts_jogadores.csv")
+    df.columns = df.columns.str.strip()  # Remove espaços em branco das colunas
     return df.convert_dtypes().infer_objects()
 
 df = carregar_dados()
@@ -52,6 +54,22 @@ with aba1:
         st.markdown("**Por Custo-Benefício**")
         st.dataframe(df_filtrado.sort_values("Custo-Benefício", ascending=False).head(10))
 
+    # Gráfico de dispersão: Preço x Pontos Média
+    st.subheader("\U0001F4CA Gráfico: Preço vs. Pontos Média")
+    fig = px.scatter(
+        df_filtrado,
+        x="Preço (C$)",
+        y="Pontos Média",
+        color="Clube",
+        hover_name="Nome",
+        size_max=15,
+        title="Relação entre Preço e Pontos Média",
+        labels={"Preço (C$)": "Preço (C$)", "Pontos Média": "Pontos Média"},
+    )
+    fig.update_traces(marker=dict(size=10, opacity=0.7), selector=dict(mode='markers'))
+    fig.update_layout(height=600)
+    st.plotly_chart(fig, use_container_width=True)
+
     # Tabela completa com filtro de nome
     st.subheader("\U0001F4C4 Tabela Completa dos Jogadores")
     nome_jogador = st.text_input("\U0001F50D Buscar jogador pelo nome")
@@ -59,48 +77,62 @@ with aba1:
         df_filtrado = df_filtrado[df_filtrado["Nome"].str.contains(nome_jogador, case=False, na=False)]
     st.dataframe(df_filtrado.sort_values("Pontos Média", ascending=False), use_container_width=True)
 
-    # Análise por Perfil de Jogador - Separado em duas tabelas
-    st.subheader("\U0001F4CA Análise por Perfil de Jogador")
+    # Botão para download em Excel
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df_filtrado.to_excel(writer, index=False, sheet_name='Jogadores')
+    output.seek(0)
+    dados_excel = output.getvalue()
 
-    scouts_ofensivos = ["G", "A", "FS", "FF", "FD", "FT", "PS"]
-    scouts_defensivos = ["SG", "DS", "DE", "DP"]
-    scouts_negativos = ["GC", "CV", "CA", "GS", "PP", "PC", "FC", "I"]
-
-    for scout in scouts_ofensivos + scouts_defensivos + scouts_negativos:
-        if scout in df_filtrado.columns:
-            df_filtrado[scout] = pd.to_numeric(df_filtrado[scout], errors="coerce").fillna(0)
-
-    df_filtrado["Score Ofensivo"] = df_filtrado[scouts_ofensivos].sum(axis=1)
-    df_filtrado["Score Defensivo"] = df_filtrado[scouts_defensivos].sum(axis=1)
-    df_filtrado["Score Negativo"] = df_filtrado[scouts_negativos].sum(axis=1)
-
-    col5, col6 = st.columns(2)
-    with col5:
-        st.markdown("**Top 10 - Scouts Ofensivos**")
-        st.dataframe(df_filtrado.sort_values("Score Ofensivo", ascending=False)[["Nome", "Clube", "Posição", "Score Ofensivo"]].head(10))
-
-    with col6:
-        st.markdown("**Top 10 - Scouts Defensivos**")
-        st.dataframe(df_filtrado.sort_values("Score Defensivo", ascending=False)[["Nome", "Clube", "Posição", "Score Defensivo"]].head(10))
+    st.download_button(
+        label="\U0001F4BE Baixar tabela como Excel",
+        data=dados_excel,
+        file_name="jogadores_filtrados.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
     # Análise sem G/A ou SG por posição
     st.subheader("\U0001F4C9 Análise Sem Scouts-Chave")
 
-    atac_mei_sem_ga = df_filtrado[(df_filtrado["Posição"].isin(["ATA", "MEI"])) & (df_filtrado["G"] == 0) & (df_filtrado["A"] == 0)]
-    def_lat_sem_sg = df_filtrado[(df_filtrado["Posição"].isin(["ZAG", "LAT"])) & (df_filtrado["SG"] == 0)]
-    gol_sem_sg = df_filtrado[(df_filtrado["Posição"] == "GOL") & (df_filtrado["SG"] == 0)]
+    scout_valores = {
+        "DS": 1.5, "G": 8.0, "A": 5.0, "SG": 5.0,
+        "FS": 0.5, "FF": 0.8, "FD": 1.2, "FT": 3.0, "PS": 1.0,
+        "DE": 1.3, "DP": 7.0,
+        "GC": -3.0, "CV": -3.0, "CA": -1.0, "GS": -1.0,
+        "PP": -4.0, "PC": -1.0, "FC": -0.3, "I": -0.1
+    }
 
-    col7, col8 = st.columns(2)
-    with col7:
-        st.markdown(f"**Atacantes e Meias sem Gols ou Assistências ({len(atac_mei_sem_ga)})**")
-        st.dataframe(atac_mei_sem_ga[["Nome", "Clube", "Posição", "G", "A"]])
+    scouts_usados = list(scout_valores.keys())
+    for scout in scouts_usados:
+        if scout in df_filtrado.columns:
+            df_filtrado[scout] = pd.to_numeric(df_filtrado[scout], errors="coerce").fillna(0)
 
-    with col8:
-        st.markdown(f"**Zagueiros e Laterais sem SG ({len(def_lat_sem_sg)})**")
-        st.dataframe(def_lat_sem_sg[["Nome", "Clube", "Posição", "SG"]])
+    def calcular_score(linha):
+        return sum([linha[scout] * valor for scout, valor in scout_valores.items() if scout in linha])
+
+    atac_mei_sem_ga = df_filtrado[(df_filtrado["Posição"].isin(["ATA", "MEI"])) & (df_filtrado["G"] == 0) & (df_filtrado["A"] == 0)].copy()
+    atac_mei_sem_ga["Pontuação Total"] = atac_mei_sem_ga.apply(calcular_score, axis=1)
+    colunas_atac_mei = ['Nome', 'Clube', 'Posição', 'Preço (C$)', 'Pontos Média', 'Partidas',
+        'DS', 'FC', 'FD', 'FF', 'FS', 'I', 'CA', 'FT', 'CV', 'PP', 'PC', 'DP', 'PS', 'GC', "Pontuação Total"]
+
+    def_lat_sem_sg = df_filtrado[(df_filtrado["Posição"].isin(["ZAG", "LAT"])) & (df_filtrado["SG"] == 0)].copy()
+    def_lat_sem_sg["Pontuação Total"] = def_lat_sem_sg.apply(calcular_score, axis=1)
+    colunas_def_lat = ['Nome', 'Clube', 'Posição', 'Preço (C$)', 'Pontos Média', 'Partidas',
+        'DS', 'FC', 'FD', 'FF', 'FS', 'I', 'CA', 'FT', 'CV', 'PP', 'PC', 'PS', 'GC', "Pontuação Total"]
+
+    gol_sem_sg = df_filtrado[(df_filtrado["Posição"] == "GOL") & (df_filtrado["SG"] == 0)].copy()
+    gol_sem_sg["Pontuação Total"] = gol_sem_sg.apply(calcular_score, axis=1)
+    colunas_gol = ['Nome', 'Clube', 'Posição', 'Preço (C$)', 'Pontos Média', 'Partidas',
+        'FC', 'FS', 'CA', 'DE', 'GS', 'CV', 'PC', 'DP', 'GC', "Pontuação Total"]
+
+    st.markdown(f"**Atacantes e Meias sem Gols ou Assistências ({len(atac_mei_sem_ga)})**")
+    st.dataframe(atac_mei_sem_ga[colunas_atac_mei])
+
+    st.markdown(f"**Zagueiros e Laterais sem SG ({len(def_lat_sem_sg)})**")
+    st.dataframe(def_lat_sem_sg[colunas_def_lat])
 
     st.markdown(f"**Goleiros sem SG ({len(gol_sem_sg)})**")
-    st.dataframe(gol_sem_sg[["Nome", "Clube", "Posição", "SG"]])
+    st.dataframe(gol_sem_sg[colunas_gol])
 
     with st.expander("\U0001F4D8 Dicionário de Scouts"):
         st.markdown("""
@@ -131,4 +163,3 @@ with aba1:
         """)
 
 st.caption("Desenvolvido por Carlos Willian - Cartola FC 2025")
-
