@@ -75,7 +75,7 @@ fig = px.scatter(
     size_max=15,
     color_discrete_sequence=px.colors.qualitative.Safe,
     labels={"Preço (C$)": "Preço (C$)", "Pontos Média": "Pontos Média"},
-    title=""  # Define o título como uma string vazia para removê-lo
+    title="Relação entre Preço e Pontos por Clube"
 )
 fig.update_traces(marker=dict(size=10, opacity=0.75))
 fig.update_layout(height=600, title_font_size=20)
