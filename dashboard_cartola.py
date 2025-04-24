@@ -30,11 +30,6 @@ clube_filtro = st.sidebar.multiselect("Filtrar por Clube", [], placeholder="Carr
 preco_max = st.sidebar.slider("Preço máximo (C$)", 0.0, 30.0, 30.0, step=0.1)
 media_max = st.sidebar.slider("Média máxima de pontos", 0.0, 20.0, 20.0, step=0.1)
 
-# Botão para atualizar os dados
-if st.sidebar.button("🔄 Atualizar Dados"):
-    st.cache_data.clear()
-    st.experimental_rerun()
-
 # Exibir horário da atualização
 agora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 st.sidebar.markdown(f"🕒 Dados atualizados em: `{agora}`")
@@ -70,10 +65,9 @@ def carregar_dados_api():
     df.columns = df.columns.str.strip()
     return df.convert_dtypes().infer_objects()
 
-# Chamada da função
-
+# Título principal
+df = None
 st.title("🏟️ Dashboard de Scouts - Cartola FC 2025")
-
 aba1 = st.container()
 
 with aba1:
@@ -85,6 +79,11 @@ with aba1:
     # Atualiza opções dos filtros agora que os dados estão carregados
     st.sidebar.multiselect("Filtrar por Posição", df["Posição"].unique().tolist(), default=df["Posição"].unique().tolist(), key="pos_filtro")
     st.sidebar.multiselect("Filtrar por Clube", df["Clube"].unique().tolist(), default=df["Clube"].unique().tolist(), key="clube_filtro")
+
+    # Atualização manual dos dados
+    if st.sidebar.button("🔄 Atualizar Dados"):
+        carregar_dados_api.clear()
+        st.experimental_rerun()
 
     posicao_selecionada = st.session_state.get("pos_filtro", df["Posição"].unique().tolist())
     clube_selecionado = st.session_state.get("clube_filtro", df["Clube"].unique().tolist())
@@ -108,4 +107,5 @@ with aba1:
     with col4:
         st.markdown("**Por Custo-Benefício**")
         st.dataframe(df_filtrado.sort_values("Custo-Benefício", ascending=False).head(10))
+
 
