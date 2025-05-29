@@ -60,6 +60,7 @@ df["Custo-Benefício"] = df["Pontos Média"] / df["Preço (C$)"].replace(0, 0.1)
 # Filtros laterais dinâmicos
 posicoes = df["Posição"].unique().tolist()
 clubes = df["Clube"].unique().tolist()
+clubes = df["Partidas"].unique().tolist()
 
 posicao_selecionada = st.sidebar.multiselect("🧩 Posição", posicoes, default=posicoes)
 clube_selecionado = st.sidebar.multiselect("🏳️ Clube", clubes, default=clubes)
