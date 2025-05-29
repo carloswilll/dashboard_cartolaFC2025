@@ -20,6 +20,23 @@ st.markdown("""
 # SIDEBAR
 st.sidebar.title("⚙️ Filtros e Configurações")
 
+# Filtro por posição
+posicao_filtro = st.sidebar.multiselect("Filtrar por Posição", [], placeholder="Carregando posições...")
+
+# Filtro por clube
+clube_filtro = st.sidebar.multiselect("Filtrar por Clube", [], placeholder="Carregando clubes...")
+
+# Filtros numéricos máximos
+preco_max = st.sidebar.slider("Preço máximo (C$)", 0.0, 30.0, 30.0, step=0.1)
+media_max = st.sidebar.slider("Média máxima de pontos", 0.0, 20.0, 20.0, step=0.1)
+
+# Filtro por número de jogos
+jogos_min = st.sidebar.slider("Número mínimo de jogos", 0, 38, 0)
+
+# Exibir horário da atualização
+agora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+st.sidebar.markdown(f"🕒 Dados atualizados em: `{agora}`")
+
 # Carregar dados da API
 @st.cache_data(show_spinner="Carregando dados da API...")
 def carregar_dados_api():
@@ -51,86 +68,71 @@ def carregar_dados_api():
     df.columns = df.columns.str.strip()
     return df.convert_dtypes().infer_objects()
 
+# Carregar tabela do Brasileirão
+@st.cache_data
+def carregar_tabela_brasileirao():
+    url_tabela = "https://api.cartola.globo.com/partidas"
+    response = requests.get(url_tabela).json()
+    clubes = response['clubes']
+    partidas = response['partidas']
+
+    tabela_data = []
+    for clube_id, info in clubes.items():
+        tabela_data.append({
+            "Clube": info['nome'],
+            "Posição": info.get("posicao", None),
+            "Pontos": info.get("pontos", None),
+        })
+
+    return pd.DataFrame(tabela_data).dropna(subset=["Posição"]).sort_values("Posição")
+
 # Título principal
-df = carregar_dados_api()
-df["Preço (C$)"] = pd.to_numeric(df["Preço (C$)"], errors="coerce").fillna(0.0)
-df["Pontos Média"] = pd.to_numeric(df["Pontos Média"], errors="coerce").fillna(0.0)
-df["Custo-Benefício"] = df["Pontos Média"] / df["Preço (C$)"].replace(0, 0.1)
+df = None
+st.title("🏟️ Dashboard de Scouts - Cartola FC 2025")
+aba1 = st.container()
 
-# Filtros laterais dinâmicos
-posicoes = df["Posição"].unique().tolist()
-clubes = df["Clube"].unique().tolist()
-clubes = df["Partidas"].unique().tolist()
+with aba1:
+    df = carregar_dados_api()
+    df["Preço (C$)"] = pd.to_numeric(df["Preço (C$)"], errors="coerce").fillna(0.0)
+    df["Pontos Média"] = pd.to_numeric(df["Pontos Média"], errors="coerce").fillna(0.0)
+    df["Custo-Benefício"] = df["Pontos Média"] / df["Preço (C$)"].replace(0, 0.1)
 
-posicao_selecionada = st.sidebar.multiselect("🧩 Posição", posicoes, default=posicoes)
-clube_selecionado = st.sidebar.multiselect("🏳️ Clube", clubes, default=clubes)
+    # Atualiza opções dos filtros agora que os dados estão carregados
+    st.sidebar.multiselect("Filtrar por Posição", df["Posição"].unique().tolist(), default=df["Posição"].unique().tolist(), key="pos_filtro")
+    st.sidebar.multiselect("Filtrar por Clube", df["Clube"].unique().tolist(), default=df["Clube"].unique().tolist(), key="clube_filtro")
 
-preco_max = st.sidebar.slider("💰 Preço máximo (C$)", float(df["Preço (C$)"].min()), float(df["Preço (C$)"].max()), float(df["Preço (C$)"].max()))
-media_max = st.sidebar.slider("📉 Pontos Média máxima", float(df["Pontos Média"].min()), float(df["Pontos Média"].max()), float(df["Pontos Média"].max()))
+    # Atualização manual dos dados
+    if st.sidebar.button("🔄 Atualizar Dados"):
+        carregar_dados_api.clear()
+        st.experimental_rerun()
 
-st.sidebar.markdown(f"🕒 Dados atualizados em: `{datetime.now().strftime('%d/%m/%Y %H:%M:%S')}`")
+    posicao_selecionada = st.session_state.get("pos_filtro", df["Posição"].unique().tolist())
+    clube_selecionado = st.session_state.get("clube_filtro", df["Clube"].unique().tolist())
 
-# Aplicar filtros
-df_filtrado = df[
-    (df["Posição"].isin(posicao_selecionada)) &
-    (df["Clube"].isin(clube_selecionado)) &
-    (df["Preço (C$)"] <= preco_max) &
-    (df["Pontos Média"] <= media_max)
-].copy()
+    df_filtrado = df[
+        (df["Posição"].isin(posicao_selecionada)) &
+        (df["Clube"].isin(clube_selecionado)) &
+        (df["Preço (C$)"] <= preco_max) &
+        (df["Pontos Média"] <= media_max) &
+        (df["Partidas"] >= jogos_min)
+    ].copy()
 
-df_filtrado["Custo-Benefício"] = df_filtrado["Pontos Média"] / df_filtrado["Preço (C$)"].replace(0, 0.1)
+    df_filtrado["Custo-Benefício"] = df_filtrado["Pontos Média"] / df_filtrado["Preço (C$)"].replace(0, 0.1)
 
-# 🏆 Título
-st.title("⚽ Top Jogadores - Cartola FC 2025")
-st.markdown("Visualize os melhores jogadores da rodada com base em pontuação e custo-benefício.")
+    st.subheader("🏆 Top Jogadores")
+    col3, col4 = st.columns(2)
 
-# 🔢 Painéis de Estatísticas
-col_a, col_b, col_c, col_d = st.columns(4)
+    with col3:
+        st.markdown("**Por Pontos Média**")
+        st.dataframe(df_filtrado.sort_values("Pontos Média", ascending=False).head(10))
 
-col_a.metric("📋 Jogadores filtrados", len(df_filtrado))
-col_b.metric("🪙 Preço médio (C$)", f"{df_filtrado['Preço (C$)'].mean():.2f}")
-col_c.metric("📊 Pontuação média", f"{df_filtrado['Pontos Média'].mean():.2f}")
-col_d.metric("💸 Custo-Benefício médio", f"{df_filtrado['Custo-Benefício'].mean():.2f}")
+    with col4:
+        st.markdown("**Por Custo-Benefício**")
+        st.dataframe(df_filtrado.sort_values("Custo-Benefício", ascending=False).head(10))
 
-# 🔝 Destaques
-st.markdown("---")
-st.subheader("🏅 Destaques da Rodada")
-col1, col2 = st.columns(2)
-
-with col1:
-    st.markdown("🔝 **Top 10 por Pontos Média**")
-    st.dataframe(df_filtrado.sort_values("Pontos Média", ascending=False).head(10), use_container_width=True, height=300)
-
-with col2:
-    st.markdown("💸 **Top 10 por Custo-Benefício**")
-    st.dataframe(df_filtrado.sort_values("Custo-Benefício", ascending=False).head(10), use_container_width=True, height=300)
-
-# 📊 Gráfico de Dispersão
-st.markdown("---")
-st.subheader("📊 Relação entre Preço e Pontos")
-fig = px.scatter(
-    df_filtrado,
-    x="Preço (C$)",
-    y="Pontos Média",
-    color="Clube",
-    hover_name="Nome",
-    size_max=15,
-    color_discrete_sequence=px.colors.qualitative.Safe,
-    labels={"Preço (C$)": "Preço (C$)", "Pontos Média": "Pontos Média"},
-)
-fig.update_traces(marker=dict(size=10, opacity=0.75))
-fig.update_layout(height=600, title_font_size=20)
-st.plotly_chart(fig, use_container_width=True)
-
-# 🧍 Buscar Jogador
-st.markdown("---")
-st.subheader("📄 Lista Completa")
-nome_jogador = st.text_input("🔍 Buscar por nome do jogador", placeholder="Ex: Pedro, Hulk, Gerson...")
-
-if nome_jogador:
-    df_filtrado = df_filtrado[df_filtrado["Nome"].str.contains(nome_jogador, case=False, na=False)]
-
-st.dataframe(df_filtrado.sort_values("Pontos Média", ascending=False), use_container_width=True, height=400)
-
-st.caption("Desenvolvido por Carlos Willian - Cartola FC 2025")
+    # Tabela do Brasileirão
+    st.markdown("---")
+    st.subheader("📊 Classificação do Brasileirão 2025")
+    tabela_brasileirao = carregar_tabela_brasileirao()
+    st.dataframe(tabela_brasileirao, use_container_width=True)
 
