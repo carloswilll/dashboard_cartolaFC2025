@@ -46,364 +46,140 @@ TIMEOUT = 10
 # ================================
 
 def aplicar_estilo_customizado():
-    """Aplica estilos CSS com alto contraste para melhor legibilidade"""
     st.markdown("""
     <style>
-    /* Importar fonte Google */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    
-    /* Tema geral - Fundo branco limpo */
-    .stApp {
-        background: #ffffff;
+    /* Fonte universal maior e escura */
+    html, body, .stApp {
         font-family: 'Inter', sans-serif;
-        color: #1f2937;
+        font-size: 1.08rem !important;
+        color: #232323 !important;
+        background: #fff !important;
     }
-    
-    /* Sidebar com azul escuro */
+
+    /* Sidebar: azul escuro background, texto grande e branco */
     .css-1d391kg {
         background: #1e40af !important;
-        border-right: 3px solid #1d4ed8;
+        color: #fff !important;
     }
-    
-    /* Títulos da sidebar - Branco puro */
+    .css-1d391kg .stMarkdown, 
+    .css-1d391kg p, 
+    .css-1d391kg label, 
     .css-1d391kg h1, 
     .css-1d391kg h2, 
     .css-1d391kg h3, 
     .css-1d391kg h4 {
-        color: #ffffff !important;
-        font-weight: 700;
-        text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        color: #fff !important;
+        font-size: 1.1rem !important;
+        font-weight: bold !important;
+        letter-spacing: 0.01rem !important;
+        text-shadow: 0 2px 8px rgba(30,64,175,0.2);
     }
-    
-    /* Texto da sidebar - Branco */
-    .css-1d391kg .stMarkdown p, 
-    .css-1d391kg .stMarkdown strong,
-    .css-1d391kg .stSelectbox label,
-    .css-1d391kg .stMultiSelect label,
-    .css-1d391kg .stSlider label,
-    .css-1d391kg .stTextInput label,
-    .css-1d391kg .stCheckbox label {
-        color: #ffffff !important;
-        font-weight: 500;
+
+    /* Inputs, selectboxes e sliders na sidebar, textos grandes */
+    .stMultiSelect, .stSelectbox, .stSlider, .stTextInput, .stCheckbox {
+        font-size: 1.1rem !important;
     }
-    
-    /* Cards de filtros na sidebar */
-    .css-1d391kg .stExpander {
-        background: rgba(30, 64, 175, 0.8) !important;
-        border: 2px solid #3b82f6 !important;
-        border-radius: 10px !important;
-        margin-bottom: 1rem;
+
+    /* Títulos principais no app - azul quase preto e grandes */
+    h1, h2, h3, h4 {
+        color: #171923 !important;
+        font-weight: 900 !important;
+        font-size: 2.1rem !important;
+        letter-spacing: 0.03rem !important;
     }
-    
-    .css-1d391kg .stExpander > div {
-        background: rgba(30, 64, 175, 0.9) !important;
-    }
-    
-    /* Cards de métricas principais - Alto contraste */
+    h2, h3 { font-size: 1.7rem !important; }
+    h4, h5 { font-size: 1.3rem !important; }
+
+    /* Métricas principais - NÚMEROS grandes e escuros */
     [data-testid="metric-container"] {
-        background: #ffffff !important;
-        border: 3px solid #1e40af !important;
-        padding: 1.5rem !important;
+        background: #fff !important;
+        border: 2px solid #1e40af !important;
         border-radius: 12px !important;
-        box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2) !important;
+        box-shadow: 0 4px 14px #e1e1e1;
     }
-    
-    [data-testid="metric-container"]:hover {
-        border-color: #3b82f6 !important;
-        box-shadow: 0 6px 20px rgba(30, 64, 175, 0.3) !important;
-    }
-    
-    /* Valores das métricas - Azul escuro */
     [data-testid="metric-container"] [data-testid="metric-value"] {
-        color: #1e40af !important;
+        color: #171923 !important;
+        font-size: 2.7rem !important;
         font-weight: 800 !important;
-        font-size: 2rem !important;
+        letter-spacing: 0.04rem !important;
     }
-    
-    /* Labels das métricas */
     [data-testid="metric-container"] [data-testid="metric-label"] {
-        color: #374151 !important;
-        font-weight: 600 !important;
-        font-size: 0.9rem !important;
+        color: #2d3748 !important;
+        font-size: 1.2rem !important;
+        font-weight: 700 !important;
     }
-    
-    /* Delta das métricas */
     [data-testid="metric-container"] [data-testid="metric-delta"] {
+        color: #1e40af !important;
+        font-size: 1.1rem !important;
+        font-weight: 700 !important;
+    }
+
+    /* Dataframe/tabelas: fundo branco, texto preto, bordas nítidas */
+    .stDataFrame {
+        background: #fff !important;
+        border: 2px solid #1e40af !important;
+        border-radius: 10px !important;
+        color: #232323 !important;
+        font-size: 1.08rem !important;
+    }
+    .stDataFrame thead th {
+        color: #232323 !important;
+        background: #f0f0f0 !important;
+        font-size: 1.16rem !important;
+        font-weight: 900 !important;
+    }
+    .stDataFrame tbody td {
+        color: #231f20 !important;
+        background: #fff !important;
+        font-size: 1.08rem !important;
         font-weight: 600 !important;
     }
-    
-    /* Multiselect - Azul escuro */
-    .stMultiSelect [data-baseweb="select"] span {
-        background: #1e40af !important;
-        color: #ffffff !important;
-        border-radius: 6px;
-        font-weight: 600;
-        border: 1px solid #ffffff;
+
+    /* Gráficos - fundo branco, labels escuras */
+    .js-plotly-plot, .svg-container {
+      background: #fff !important;
+      color: #232323 !important;
     }
-    
-    /* Botões - Alto contraste */
-    .stButton > button {
-        background: #1e40af !important;
-        color: #ffffff !important;
-        border: 2px solid #1e40af !important;
-        border-radius: 8px !important;
-        padding: 0.7rem 1.4rem !important;
-        font-weight: 700 !important;
-        font-size: 1rem !important;
-        transition: all 0.2s ease !important;
+
+    /* Botões azul escuro, texto branco, grandes */
+    .stButton>button {
+      background: #1e40af;
+      color: #fff;
+      border-radius: 8px !important;
+      font-size: 1.15rem !important;
+      font-weight: 700 !important;
+      border: 2px solid #1e40af !important;
+      padding: 0.55rem 1.6rem;
+      box-shadow: 0 2px 12px #e2e2e2;
     }
-    
-    .stButton > button:hover {
-        background: #3b82f6 !important;
-        border-color: #3b82f6 !important;
-        transform: translateY(-1px) !important;
+    .stButton>button:hover {
+      border-color: #3b82f6 !important;
+      background: #3b82f6 !important;
     }
-    
-    /* Botões primários */
-    .stButton > button[kind="primary"] {
-        background: #dc2626 !important;
-        border-color: #dc2626 !important;
-    }
-    
-    .stButton > button[kind="primary"]:hover {
-        background: #b91c1c !important;
-        border-color: #b91c1c !important;
-    }
-    
-    /* Dataframes - Contraste máximo */
-    .stDataFrame {
-        background: #ffffff !important;
-        border: 2px solid #1e40af !important;
-        border-radius: 8px !important;
-        overflow: hidden !important;
-    }
-    
-    /* Cabeçalhos das tabelas - Azul escuro */
-    .stDataFrame thead th {
-        background: #1e40af !important;
-        color: #ffffff !important;
-        font-weight: 700 !important;
-        font-size: 0.95rem !important;
-        border: none !important;
-        padding: 12px 8px !important;
-    }
-    
-    /* Células das tabelas */
-    .stDataFrame tbody td {
-        background: #ffffff !important;
-        color: #1f2937 !important;
-        border-bottom: 1px solid #e5e7eb !important;
-        font-weight: 500 !important;
-        padding: 10px 8px !important;
-    }
-    
-    /* Alternância de cores nas linhas */
-    .stDataFrame tbody tr:nth-child(even) {
-        background: #f9fafb !important;
-    }
-    
-    /* Hover nas linhas */
-    .stDataFrame tbody tr:hover {
-        background: #dbeafe !important;
-    }
-    
-    /* Tabs - Alto contraste */
+
+    /* Tabs - fundo branco, texto azul escuro grande */
     .stTabs [data-baseweb="tab-list"] {
-        background: #ffffff;
+        background: #fff;
         border: 2px solid #1e40af;
-        border-radius: 10px;
-        padding: 8px;
+        padding: 12px !important;
         margin-bottom: 2rem;
+        border-radius: 12px !important;
     }
-    
     .stTabs [data-baseweb="tab"] {
-        background: transparent;
-        border-radius: 6px;
-        color: #1e40af;
-        font-weight: 600;
-        padding: 8px 16px;
-        margin: 0 4px;
+        color: #1e40af !important;
+        font-size: 1.2rem !important;
+        font-weight: 700 !important;
+        padding: 10px 18px !important;
+        border-radius: 6px !important;
     }
-    
     .stTabs [aria-selected="true"] {
         background: #1e40af !important;
-        color: #ffffff !important;
-    }
-    
-    /* Alertas */
-    .stAlert > div {
-        background: #ffffff !important;
-        border: 2px solid #10b981 !important;
-        border-radius: 8px !important;
-        color: #065f46 !important;
-    }
-    
-    .stAlert[data-baseweb="notification"][kind="error"] > div {
-        border-color: #dc2626 !important;
-        color: #991b1b !important;
-    }
-    
-    .stAlert[data-baseweb="notification"][kind="warning"] > div {
-        border-color: #d97706 !important;
-        color: #92400e !important;
-    }
-    
-    /* Headers principais */
-    .main h1 {
-        color: #1e40af !important;
-        font-weight: 800 !important;
-        font-size: 2.5rem !important;
-        margin-bottom: 1rem !important;
-    }
-    
-    .main h2 {
-        color: #1f2937 !important;
-        font-weight: 700 !important;
-        font-size: 1.8rem !important;
-        margin: 1.5rem 0 1rem 0 !important;
-    }
-    
-    .main h3 {
-        color: #374151 !important;
-        font-weight: 600 !important;
-        font-size: 1.4rem !important;
-        margin: 1rem 0 0.8rem 0 !important;
-    }
-    
-    .main h4 {
-        color: #1e40af !important;
-        font-weight: 600 !important;
-        font-size: 1.2rem !important;
-    }
-    
-    /* Selectbox */
-    .stSelectbox > div > div > div {
-        background: rgba(30, 64, 175, 0.1) !important;
-        border: 2px solid #3b82f6 !important;
-        border-radius: 6px !important;
-        color: #ffffff !important;
-        font-weight: 500 !important;
-    }
-    
-    /* Text Input */
-    .stTextInput > div > div > input {
-        border: 2px solid #1e40af !important;
-        border-radius: 6px !important;
-        padding: 8px 12px !important;
-        font-weight: 500 !important;
-        font-size: 1rem !important;
-        background: #ffffff !important;
-        color: #1f2937 !important;
-    }
-    
-    .stTextInput > div > div > input:focus {
-        border-color: #3b82f6 !important;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
-    }
-    
-    /* Slider */
-    .stSlider > div > div > div {
-        background: #1e40af !important;
-    }
-    
-    .stSlider > div > div > div > div {
-        background: #3b82f6 !important;
-        border: 2px solid #ffffff !important;
-    }
-    
-    /* Gráficos */
-    .js-plotly-plot {
-        background: #ffffff !important;
-        border: 2px solid #1e40af !important;
-        border-radius: 10px !important;
-    }
-    
-    /* Cards informativos */
-    .info-card {
-        background: #ffffff !important;
-        border: 3px solid #1e40af !important;
-        border-radius: 10px !important;
-        padding: 1.5rem !important;
-        margin: 1rem 0 !important;
-        box-shadow: 0 4px 12px rgba(30, 64, 175, 0.15) !important;
-    }
-    
-    .info-card h4 {
-        color: #1e40af !important;
-        font-weight: 700 !important;
-        margin-top: 0 !important;
-    }
-    
-    .info-card p, .info-card div {
-        color: #374151 !important;
-        font-weight: 500 !important;
-    }
-    
-    /* Loading spinner */
-    .stSpinner > div {
-        border-top-color: #1e40af !important;
-        border-right-color: #1e40af !important;
-    }
-    
-    /* Markdown text */
-    .main .stMarkdown {
-        color: #1f2937 !important;
-    }
-    
-    .main .stMarkdown p {
-        color: #374151 !important;
-        font-weight: 500 !important;
-    }
-    
-    .main .stMarkdown strong {
-        color: #1e40af !important;
-        font-weight: 700 !important;
-    }
-    
-    /* Checkbox */
-    .css-1d391kg .stCheckbox > div {
-        color: #ffffff !important;
-    }
-    
-    /* Caption */
-    .stCaption {
-        color: #6b7280 !important;
-        font-weight: 500 !important;
-    }
-    
-    /* Success message */
-    .stSuccess > div {
-        background: #ffffff !important;
-        border: 2px solid #10b981 !important;
-        color: #065f46 !important;
-        font-weight: 600 !important;
-    }
-    
-    /* Info message */
-    .stInfo > div {
-        background: #ffffff !important;
-        border: 2px solid #3b82f6 !important;
-        color: #1e40af !important;
-        font-weight: 600 !important;
-    }
-    
-    /* Warning message */
-    .stWarning > div {
-        background: #ffffff !important;
-        border: 2px solid #d97706 !important;
-        color: #92400e !important;
-        font-weight: 600 !important;
-    }
-    
-    /* Error message */
-    .stError > div {
-        background: #ffffff !important;
-        border: 2px solid #dc2626 !important;
-        color: #991b1b !important;
-        font-weight: 600 !important;
+        color: #fff !important;
+        font-size: 1.3rem !important;
     }
     </style>
     """, unsafe_allow_html=True)
+
 
 # ================================
 # FUNÇÕES DE UTILITÁRIOS
@@ -1319,3 +1095,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
