@@ -48,137 +48,127 @@ TIMEOUT = 10
 def aplicar_estilo_customizado():
     st.markdown("""
     <style>
-    /* Fonte universal maior e escura */
+    /* Fonte universal e espaçamento confortável */
     html, body, .stApp {
-        font-family: 'Inter', sans-serif;
+        font-family: 'Inter', Arial, sans-serif;
         font-size: 1.08rem !important;
+        background: #f8fafc !important;
         color: #232323 !important;
-        background: #fff !important;
+        line-height: 1.64;
     }
-
-    /* Sidebar: azul escuro background, texto grande e branco */
+    /* Container principal centralizado */
+    .main-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem;
+    }
+    /* Sidebar moderna */
     .css-1d391kg {
-        background: #1e40af !important;
-        color: #fff !important;
+        background: #fff !important;
+        border-right: 2px solid #e5e7eb;
     }
-    .css-1d391kg .stMarkdown, 
-    .css-1d391kg p, 
-    .css-1d391kg label, 
-    .css-1d391kg h1, 
-    .css-1d391kg h2, 
-    .css-1d391kg h3, 
-    .css-1d391kg h4 {
-        color: #fff !important;
-        font-size: 1.1rem !important;
-        font-weight: bold !important;
-        letter-spacing: 0.01rem !important;
-        text-shadow: 0 2px 8px rgba(30,64,175,0.2);
+    .css-1d391kg h2, .css-1d391kg h3, .css-1d391kg h4 {
+        color: #1e293b !important;
+        font-weight: 800;
+        font-size: 1.3rem;
+        margin-top: 1rem !important;
+        margin-bottom: 1.5rem !important;
     }
-
-    /* Inputs, selectboxes e sliders na sidebar, textos grandes */
-    .stMultiSelect, .stSelectbox, .stSlider, .stTextInput, .stCheckbox {
-        font-size: 1.1rem !important;
+    .css-1d391kg label, .css-1d391kg p, .css-1d391kg .stMarkdown {
+        color: #283747 !important;
+        font-size: 1.04rem;
     }
-
-    /* Títulos principais no app - azul quase preto e grandes */
-    h1, h2, h3, h4 {
-        color: #171923 !important;
-        font-weight: 900 !important;
-        font-size: 2.1rem !important;
-        letter-spacing: 0.03rem !important;
+    /* Agrupamento de filtros (cards) */
+    .stExpander {
+        background: #f1f5f9 !important;
+        border: 1.5px solid #e5e7eb !important;
+        border-radius: 14px !important;
+        padding: 0.8rem !important;
+        box-shadow: 0 1px 8px #e4e4e4;
+        margin-bottom: 1.6rem !important;
     }
-    h2, h3 { font-size: 1.7rem !important; }
-    h4, h5 { font-size: 1.3rem !important; }
-
-    /* Métricas principais - NÚMEROS grandes e escuros */
+    /* Métricas principais em cards grandes */
     [data-testid="metric-container"] {
         background: #fff !important;
-        border: 2px solid #1e40af !important;
-        border-radius: 12px !important;
-        box-shadow: 0 4px 14px #e1e1e1;
+        border: 2px solid #60a5fa !important;
+        border-radius: 18px !important;
+        box-shadow: 0 3px 12px rgba(96, 165, 250,0.17);
+        padding: 1.5em !important;
     }
-    [data-testid="metric-container"] [data-testid="metric-value"] {
-        color: #171923 !important;
-        font-size: 2.7rem !important;
+    [data-testid="metric-value"] {
+        color: #155e75 !important;
+        font-size: 2.5rem !important;
+        font-weight: 900 !important;
+        letter-spacing: 0.03rem !important;
+    }
+    [data-testid="metric-label"] {
+        color: #29434e !important;
+        font-size: 1.22rem !important;
         font-weight: 800 !important;
-        letter-spacing: 0.04rem !important;
     }
-    [data-testid="metric-container"] [data-testid="metric-label"] {
-        color: #2d3748 !important;
-        font-size: 1.2rem !important;
-        font-weight: 700 !important;
-    }
-    [data-testid="metric-container"] [data-testid="metric-delta"] {
-        color: #1e40af !important;
-        font-size: 1.1rem !important;
-        font-weight: 700 !important;
-    }
-
-    /* Dataframe/tabelas: fundo branco, texto preto, bordas nítidas */
+    /* Dataframe/tabela clean */
     .stDataFrame {
         background: #fff !important;
-        border: 2px solid #1e40af !important;
-        border-radius: 10px !important;
-        color: #232323 !important;
-        font-size: 1.08rem !important;
+        border: 2px solid #e5e7eb !important;
+        border-radius: 14px !important;
     }
     .stDataFrame thead th {
-        color: #232323 !important;
-        background: #f0f0f0 !important;
-        font-size: 1.16rem !important;
-        font-weight: 900 !important;
+        background: #e0e7ef !important;
+        color: #283747 !important;
+        font-size: 1.13rem !important;
+        font-weight: 800;
+        border-bottom: 2px solid #60a5fa;
     }
     .stDataFrame tbody td {
-        color: #231f20 !important;
-        background: #fff !important;
-        font-size: 1.08rem !important;
-        font-weight: 600 !important;
+        color: #232323 !important;
+        font-size: 1.05rem !important;
+        font-weight: 600;
+        background: #fff;
     }
-
-    /* Gráficos - fundo branco, labels escuras */
+    /* Botões */
+    .stButton>button {
+        background: #60a5fa !important;
+        color: #fff !important;
+        font-size: 1.15rem !important;
+        font-weight: 700 !important;
+        border-radius: 8px !important;
+        padding: 0.65rem 1.6rem !important;
+        border: none;
+        margin: 0.6rem 0;
+        box-shadow: 0 2px 8px #e2e2e2;
+        transition: background 0.2s;
+    }
+    .stButton>button:hover {
+        background: #2563eb !important;
+    }
+    /* Gráficos fundo branco, texto escuro */
     .js-plotly-plot, .svg-container {
       background: #fff !important;
       color: #232323 !important;
     }
-
-    /* Botões azul escuro, texto branco, grandes */
-    .stButton>button {
-      background: #1e40af;
-      color: #fff;
-      border-radius: 8px !important;
-      font-size: 1.15rem !important;
-      font-weight: 700 !important;
-      border: 2px solid #1e40af !important;
-      padding: 0.55rem 1.6rem;
-      box-shadow: 0 2px 12px #e2e2e2;
-    }
-    .stButton>button:hover {
-      border-color: #3b82f6 !important;
-      background: #3b82f6 !important;
-    }
-
-    /* Tabs - fundo branco, texto azul escuro grande */
+    /* Tabs grandes e limpas */
     .stTabs [data-baseweb="tab-list"] {
-        background: #fff;
-        border: 2px solid #1e40af;
-        padding: 12px !important;
+        background: #fff !important;
+        border: 1.5px solid #60a5fa;
+        padding: 14px !important;
         margin-bottom: 2rem;
-        border-radius: 12px !important;
+        border-radius: 16px !important;
     }
     .stTabs [data-baseweb="tab"] {
-        color: #1e40af !important;
-        font-size: 1.2rem !important;
-        font-weight: 700 !important;
-        padding: 10px 18px !important;
-        border-radius: 6px !important;
+        color: #2563eb !important;
+        font-size: 1.16rem !important;
+        font-weight: 800 !important;
+        padding: 10px 24px !important;
+        border-radius: 10px !important;
+        transition: background 0.2s;
     }
     .stTabs [aria-selected="true"] {
-        background: #1e40af !important;
+        background: #2563eb !important;
         color: #fff !important;
-        font-size: 1.3rem !important;
     }
     </style>
     """, unsafe_allow_html=True)
+
 
 
 # ================================
@@ -1095,4 +1085,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
