@@ -1,5 +1,5 @@
 """
-Dashboard Cartola FC 2025 - Versão Melhorada com Interface Aprimorada
+Dashboard Cartola FC 2025 - Versão com Paleta Verde e Indicadores Aprimorados
 Author: Carlos Willian (Melhorado por IA)
 Funcionalidades: Análise avançada de jogadores do Cartola FC
 """
@@ -22,7 +22,6 @@ warnings.filterwarnings('ignore')
 # CONFIGURAÇÕES GLOBAIS
 # ================================
 
-# Configuração da página
 st.set_page_config(
     page_title="Dashboard Cartola FC 2025",
     page_icon="⚽",
@@ -43,34 +42,34 @@ MAX_RETRIES = 3
 TIMEOUT = 10
 
 # ================================
-# ESTILO CUSTOMIZADO - NOVA PALETA
+# NOVA PALETA DE CORES VERDE
 # ================================
 
 def aplicar_estilo_customizado():
-    """Aplica estilos CSS customizados com paleta roxa mais limpa"""
+    """Aplica estilos CSS com nova paleta verde"""
     st.markdown("""
     <style>
     /* Importar fonte Google */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     
-    /* Tema geral - Gradiente roxo mais suave */
+    /* Tema geral - Gradiente verde suave */
     .stApp {
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        background: linear-gradient(135deg, #ffffff 0%, #d0fdd7 50%, #9bfab0 100%);
         font-family: 'Inter', sans-serif;
     }
     
-    /* Sidebar moderna */
+    /* Sidebar com verde principal */
     .css-1d391kg {
-        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
-        border-right: 2px solid rgba(255,255,255,0.1);
+        background: linear-gradient(180deg, #2a8c4a 0%, #64c27b 100%);
+        border-right: 2px solid rgba(255,255,255,0.2);
     }
     
-    /* Título da sidebar */
-    .css-1d391kg h2 {
+    /* Títulos da sidebar */
+    .css-1d391kg h2, .css-1d391kg h3 {
         color: white !important;
         font-weight: 600;
         text-align: center;
-        margin-bottom: 1.5rem;
+        margin-bottom: 1rem;
         text-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     
@@ -92,45 +91,59 @@ def aplicar_estilo_customizado():
         margin-bottom: 1rem;
     }
     
-    /* Cards de métricas principais */
+    /* Cards de métricas principais - verde claro */
     [data-testid="metric-container"] {
-        background: white;
-        border: 1px solid #e1e5e9;
+        background: linear-gradient(145deg, #ffffff 0%, #d0fdd7 100%);
+        border: 2px solid #9bfab0;
         padding: 1.5rem;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(42, 140, 74, 0.15);
         transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
     
     [data-testid="metric-container"]:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 16px rgba(102, 126, 234, 0.15);
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(42, 140, 74, 0.25);
+        border-color: #64c27b;
     }
     
-    /* Multiselect com cor roxa */
+    /* Valores das métricas */
+    [data-testid="metric-container"] [data-testid="metric-value"] {
+        color: #2a8c4a !important;
+        font-weight: 700 !important;
+        font-size: 1.8rem !important;
+    }
+    
+    /* Labels das métricas */
+    [data-testid="metric-container"] [data-testid="metric-label"] {
+        color: #64c27b !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Multiselect verde */
     .stMultiSelect [data-baseweb="select"] span {
-        background: linear-gradient(45deg, #667eea, #764ba2) !important;
+        background: linear-gradient(45deg, #2a8c4a, #64c27b) !important;
         color: white !important;
         border-radius: 6px;
         font-weight: 500;
     }
     
-    /* Botões modernos */
+    /* Botões com gradiente verde */
     .stButton > button {
-        background: linear-gradient(45deg, #667eea, #764ba2);
+        background: linear-gradient(45deg, #2a8c4a, #64c27b);
         color: white;
         border: none;
-        border-radius: 8px;
-        padding: 0.6rem 1.2rem;
-        font-weight: 500;
+        border-radius: 10px;
+        padding: 0.7rem 1.4rem;
+        font-weight: 600;
         transition: all 0.3s ease;
-        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        box-shadow: 0 3px 10px rgba(42, 140, 74, 0.3);
     }
     
     .stButton > button:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        background: linear-gradient(45deg, #5a67d8, #6b46c1);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(42, 140, 74, 0.4);
+        background: linear-gradient(45deg, #238b45, #5bb975);
     }
     
     /* Dataframes com fundo branco limpo */
@@ -138,13 +151,13 @@ def aplicar_estilo_customizado():
         background: white !important;
         border-radius: 12px !important;
         overflow: hidden !important;
-        border: 1px solid #e1e5e9 !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
+        border: 2px solid #9bfab0 !important;
+        box-shadow: 0 4px 12px rgba(42, 140, 74, 0.1) !important;
     }
     
     /* Cabeçalhos das tabelas */
     .stDataFrame thead th {
-        background: linear-gradient(45deg, #667eea, #764ba2) !important;
+        background: linear-gradient(45deg, #2a8c4a, #64c27b) !important;
         color: white !important;
         font-weight: 600 !important;
         border: none !important;
@@ -153,82 +166,95 @@ def aplicar_estilo_customizado():
     /* Células das tabelas */
     .stDataFrame tbody td {
         background: white !important;
-        border-bottom: 1px solid #f1f3f4 !important;
+        border-bottom: 1px solid #d0fdd7 !important;
     }
     
     /* Alternância de cores nas linhas */
     .stDataFrame tbody tr:nth-child(even) {
-        background: #f8f9fa !important;
+        background: #f8fdf9 !important;
     }
     
-    /* Tabs modernas */
+    /* Tabs com tema verde */
     .stTabs [data-baseweb="tab-list"] {
-        background: white;
+        background: linear-gradient(145deg, #ffffff, #d0fdd7);
         border-radius: 12px;
         padding: 0.5rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        box-shadow: 0 2px 8px rgba(42, 140, 74, 0.1);
         margin-bottom: 2rem;
+        border: 1px solid #9bfab0;
     }
     
     .stTabs [data-baseweb="tab"] {
         background: transparent;
         border-radius: 8px;
-        color: #666;
+        color: #2a8c4a;
         font-weight: 500;
     }
     
     .stTabs [aria-selected="true"] {
-        background: linear-gradient(45deg, #667eea, #764ba2) !important;
+        background: linear-gradient(45deg, #2a8c4a, #64c27b) !important;
         color: white !important;
     }
     
     /* Alertas personalizados */
     .stAlert {
         border-radius: 12px;
-        border-left: 4px solid #667eea;
-        background: white;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        border-left: 4px solid #2a8c4a;
+        background: linear-gradient(145deg, white, #d0fdd7);
+        box-shadow: 0 2px 8px rgba(42, 140, 74, 0.1);
     }
     
     /* Headers principais */
     .main h1, .main h2, .main h3 {
-        color: #2d3748;
+        color: #2a8c4a;
         font-weight: 600;
     }
     
     /* Selectbox melhorado */
     .stSelectbox > div > div {
-        background: rgba(255, 255, 255, 0.2);
-        border: 1px solid rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.4);
         border-radius: 8px;
         color: white;
     }
     
-    /* Slider customizado */
+    /* Slider com cor verde */
     .stSlider > div > div > div > div {
-        background: linear-gradient(45deg, #667eea, #764ba2);
+        background: linear-gradient(45deg, #2a8c4a, #64c27b);
     }
     
     /* Gráficos com fundo limpo */
     .js-plotly-plot {
         background: white !important;
         border-radius: 12px !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
+        border: 1px solid #9bfab0 !important;
+        box-shadow: 0 4px 12px rgba(42, 140, 74, 0.1) !important;
     }
     
-    /* Cards de filtros */
-    .filter-card {
-        background: rgba(255, 255, 255, 0.15);
+    /* Cards informativos */
+    .info-card {
+        background: linear-gradient(145deg, #ffffff, #d0fdd7);
+        border: 2px solid #9bfab0;
         border-radius: 12px;
-        padding: 1rem;
-        margin: 0.5rem 0;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        backdrop-filter: blur(10px);
+        padding: 1.5rem;
+        margin: 1rem 0;
+        box-shadow: 0 3px 10px rgba(42, 140, 74, 0.1);
     }
     
-    /* Loading spinner */
+    /* Loading spinner verde */
     .stSpinner > div {
-        border-top-color: #667eea !important;
+        border-top-color: #2a8c4a !important;
+    }
+    
+    /* Text input customizado */
+    .stTextInput > div > div > input {
+        border-color: #9bfab0;
+        border-radius: 8px;
+    }
+    
+    .stTextInput > div > div > input:focus {
+        border-color: #2a8c4a;
+        box-shadow: 0 0 0 2px rgba(42, 140, 74, 0.2);
     }
     </style>
     """, unsafe_allow_html=True)
@@ -242,9 +268,7 @@ class ApiException(Exception):
     pass
 
 def fazer_requisicao_api(url: str, max_retries: int = MAX_RETRIES) -> Dict:
-    """
-    Faz requisição para API com retry e tratamento de erro
-    """
+    """Faz requisição para API com retry e tratamento de erro"""
     for tentativa in range(max_retries):
         try:
             response = requests.get(url, timeout=TIMEOUT)
@@ -260,53 +284,93 @@ def validar_dados_jogadores(dados: Dict) -> bool:
     campos_obrigatorios = ['atletas', 'clubes', 'posicoes']
     return all(campo in dados for campo in campos_obrigatorios)
 
-def calcular_estatisticas_avancadas(df: pd.DataFrame) -> pd.DataFrame:
+def calcular_metricas_futebol(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Calcula estatísticas avançadas dos jogadores
+    Calcula métricas específicas de futebol mais relevantes
     
-    INDICADORES EXPLICADOS:
+    NOVOS INDICADORES:
     
-    1. CUSTO-BENEFÍCIO = Pontos Média ÷ Preço (C$)
-       - Mede quantos pontos você ganha por cada C$ investido
-       - Exemplo: 8 pontos, C$ 10,00 = 0.8 pontos por C$
+    1. PONTOS POR C$ = Pontos Média ÷ Preço (C$)
+       - Retorno direto do investimento
     
-    2. EFICIÊNCIA = (Pontos Média × Partidas) ÷ Preço (C$)  
-       - Considera consistência (partidas jogadas) + média
-       - Favorece jogadores que jogam mais e mantêm boa média
+    2. CONSISTÊNCIA = (Partidas Jogadas ÷ Total de Rodadas) × 100
+       - Percentual de presença em campo
     
-    3. STATUS = Classificação baseada na Pontos Média:
-       - 🔴 Baixo: < 2.0 pontos
-       - 🟡 Regular: 2.0 - 4.9 pontos  
-       - 🟢 Bom: 5.0 - 7.9 pontos
-       - 🔵 Excelente: >= 8.0 pontos
+    3. FORMA ATUAL = Simulação de performance recente
+       - 🔥 Excelente, ⚡ Boa, 📊 Regular, 📉 Baixa
     
-    4. VALORIZAÇÃO = Simulado (precisa dados históricos)
-       - Fórmula real: (Preço Atual - Preço Anterior) ÷ Preço Anterior × 100
+    4. PONTOS POR AÇÕES OFENSIVAS = Pontos de gols + assistências + finalizações
     
-    5. TENDÊNCIA = 📈 se Valorização > 0, senão 📉
+    5. PONTOS POR AÇÕES DEFENSIVAS (LINHA) = Pontos de desarmes + interceptações
+    
+    6. PONTOS POR AÇÕES DEFENSIVAS (GOLEIRO) = Pontos de defesas + gols sofridos
     """
     if df.empty:
         return df
     
-    # 1. Custo-Benefício: pontos por cartola$ investido
-    df['Custo-Benefício'] = df['Pontos Média'] / df['Preço (C$)'].replace(0, 0.1)
+    # 1. Pontos por Cartola$ (mais direto que custo-benefício)
+    df['Pontos por C$'] = (df['Pontos Média'] / df['Preço (C$)'].replace(0, 0.1)).round(3)
     
-    # 2. Eficiência: considera consistência (partidas) + média
-    df['Eficiência'] = (df['Pontos Média'] * df['Partidas']) / df['Preço (C$)'].replace(0, 0.1)
+    # 2. Consistência (assumindo 38 rodadas no Brasileirão)
+    total_rodadas = 38
+    df['Consistência (%)'] = ((df['Partidas'] / total_rodadas) * 100).round(1)
     
-    # 3. Valorização simulada (no mundo real usaria histórico de preços)
-    np.random.seed(42)  # Para resultados consistentes
-    df['Valorização (%)'] = np.random.normal(0, 8, len(df)).round(1)
+    # 3. Forma Atual (simulada - em implementação real usaria últimas 5 rodadas)
+    np.random.seed(42)
+    forma_valores = np.random.choice(['🔥 Excelente', '⚡ Boa', '📊 Regular', '📉 Baixa'], 
+                                   size=len(df), 
+                                   p=[0.15, 0.35, 0.35, 0.15])
+    df['Forma Atual'] = forma_valores
     
-    # 4. Tendência baseada na valorização
-    df['Tendência'] = np.where(df['Valorização (%)'] > 0, '📈', '📉')
-    
-    # 5. Status baseado na pontuação média
+    # 4. Status baseado na pontuação média
     df['Status'] = pd.cut(
         df['Pontos Média'], 
         bins=[-np.inf, 2, 5, 8, np.inf], 
         labels=['🔴 Baixo', '🟡 Regular', '🟢 Bom', '🔵 Excelente']
     )
+    
+    # === MÉTRICAS DE AÇÕES ESPECÍFICAS ===
+    
+    # Ações Ofensivas (Gols + Assistências + Finalizações Certas)
+    acoes_ofensivas = []
+    for _, jogador in df.iterrows():
+        gols = jogador.get('G', 0) if pd.notna(jogador.get('G', 0)) else 0
+        assistencias = jogador.get('A', 0) if pd.notna(jogador.get('A', 0)) else 0
+        finalizacoes = jogador.get('FC', 0) if pd.notna(jogador.get('FC', 0)) else 0
+        
+        # Pontuação: Gol = 8pts, Assistência = 5pts, Finalização = 1.2pts
+        pontos_ofensivos = (gols * 8) + (assistencias * 5) + (finalizacoes * 1.2)
+        acoes_ofensivas.append(pontos_ofensivos)
+    
+    df['Pts Ações Ofensivas'] = acoes_ofensivas
+    
+    # Ações Defensivas - Jogadores de Linha
+    acoes_defensivas_linha = []
+    for _, jogador in df.iterrows():
+        desarmes = jogador.get('DS', 0) if pd.notna(jogador.get('DS', 0)) else 0
+        interceptacoes = jogador.get('I', 0) if pd.notna(jogador.get('I', 0)) else 0
+        faltas_sofridas = jogador.get('FS', 0) if pd.notna(jogador.get('FS', 0)) else 0
+        
+        # Pontuação: Desarme = 1.7pts, Interceptação = 1.8pts, Falta Sofrida = 0.5pts
+        pontos_def_linha = (desarmes * 1.7) + (interceptacoes * 1.8) + (faltas_sofridas * 0.5)
+        acoes_defensivas_linha.append(pontos_def_linha)
+    
+    df['Pts Def. Linha'] = acoes_defensivas_linha
+    
+    # Ações Defensivas - Goleiros
+    acoes_defensivas_gol = []
+    for _, jogador in df.iterrows():
+        if jogador.get('Posição') == 'Goleiro':
+            defesas = jogador.get('DD', 0) if pd.notna(jogador.get('DD', 0)) else 0
+            gols_contra = jogador.get('GC', 0) if pd.notna(jogador.get('GC', 0)) else 0
+            
+            # Pontuação: Defesa Difícil = 3.2pts, Gol Contra = -4pts
+            pontos_def_gol = (defesas * 3.2) + (gols_contra * -4)
+            acoes_defensivas_gol.append(pontos_def_gol)
+        else:
+            acoes_defensivas_gol.append(0)
+    
+    df['Pts Def. Goleiro'] = acoes_defensivas_gol
     
     return df
 
@@ -373,8 +437,8 @@ def carregar_dados_api() -> pd.DataFrame:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
         
-        # Estatísticas avançadas
-        df = calcular_estatisticas_avancadas(df)
+        # Calcular métricas de futebol
+        df = calcular_metricas_futebol(df)
         
         return df
         
@@ -386,118 +450,121 @@ def carregar_dados_api() -> pd.DataFrame:
         return pd.DataFrame()
 
 # ================================
-# COMPONENTES DA INTERFACE - MELHORADOS
+# COMPONENTES DA INTERFACE
 # ================================
 
-def criar_filtros_sidebar_melhorados(df: pd.DataFrame) -> Tuple:
-    """Cria filtros melhorados na sidebar com interface moderna"""
+def criar_filtros_sidebar_verde(df: pd.DataFrame) -> Tuple:
+    """Cria filtros na sidebar com tema verde"""
     if df.empty:
         return [], [], 0, 0, (0, 0), (0, 0), 0, 0
     
-    st.sidebar.markdown("## ⚙️ Configurações Avançadas")
+    st.sidebar.markdown("## ⚙️ Configurações")
     
-    # Info do sistema em card
-    with st.sidebar.expander("ℹ️ Sistema", expanded=False):
+    # Info do sistema
+    with st.sidebar.expander("📊 Status do Sistema", expanded=False):
         st.markdown(f"""
-        <div class='filter-card'>
-            <h4>📊 Status do Sistema</h4>
-            <p><strong>🕒 Atualizado:</strong> {datetime.now().strftime('%H:%M:%S')}</p>
-            <p><strong>⏱️ Cache:</strong> {CACHE_TTL//60} min</p>
-            <p><strong>📈 Total:</strong> {len(df):,} jogadores</p>
-        </div>
-        """, unsafe_allow_html=True)
+        **🕒 Última Atualização:** {datetime.now().strftime('%H:%M:%S')}
+        
+        **⏱️ Cache:** {CACHE_TTL//60} minutos
+        
+        **📈 Total de Jogadores:** {len(df):,}
+        
+        **🔄 Atualização:** Automática
+        """)
     
     # === FILTROS PRINCIPAIS ===
     with st.sidebar.expander("🎯 Filtros Principais", expanded=True):
-        st.markdown("### 🧩 Posições")
+        st.markdown("#### 🧩 Posições")
         posicoes = sorted(df["Posição"].unique().tolist())
         posicao_selecionada = st.multiselect(
-            "Selecione as posições:",
+            "Escolha as posições:",
             posicoes, 
             default=posicoes,
-            help="🎯 Escolha as posições que deseja analisar"
+            help="🎯 Filtre por posições específicas"
         )
         
-        st.markdown("### 🏳️ Clubes")  
+        st.markdown("#### 🏆 Clubes")  
         clubes = sorted(df["Clube"].unique().tolist())
         clube_selecionado = st.multiselect(
-            "Selecione os clubes:",
+            "Escolha os clubes:",
             clubes, 
             default=clubes,
-            help="🏟️ Escolha os clubes que deseja analisar"
+            help="🏟️ Filtre por clubes específicos"
         )
     
     # === FILTROS DE VALORES ===
-    with st.sidebar.expander("💰 Filtros de Preço e Performance", expanded=True):
-        st.markdown("### 💸 Faixa de Preço")
+    with st.sidebar.expander("💰 Filtros Financeiros", expanded=True):
+        st.markdown("#### 💸 Faixa de Preço")
         preco_min, preco_max = st.slider(
             "Preço em Cartola$ (C$)",
             int(df["Preço (C$)"].min()),
             int(df["Preço (C$)"].max()),
             (int(df["Preço (C$)"].min()), int(df["Preço (C$)"].max())),
-            help="💰 Defina a faixa de preço dos jogadores"
+            help="💰 Defina sua faixa de investimento"
         )
         
-        st.markdown("### 📊 Pontuação Média")
+        st.markdown("#### 📊 Performance")
         media_min, media_max = st.slider(
-            "Faixa de pontos por jogo",
+            "Pontuação Média",
             float(df["Pontos Média"].min()),
             float(df["Pontos Média"].max()),
             (float(df["Pontos Média"].min()), float(df["Pontos Média"].max())),
             step=0.1,
-            help="📈 Defina a pontuação média desejada"
+            help="📈 Filtre por nível de pontuação"
         )
         
-        st.markdown("### 🎯 Participação")
+        st.markdown("#### ⚽ Regularidade")
         partidas_min, partidas_max = st.slider(
-            "Número de partidas jogadas",
+            "Partidas Jogadas",
             int(df["Partidas"].min()),
             int(df["Partidas"].max()),
             (int(df["Partidas"].min()), int(df["Partidas"].max())),
-            help="⚽ Filtro de consistência do jogador"
+            help="🎯 Filtre por consistência"
         )
     
     # === FILTROS AVANÇADOS ===
-    with st.sidebar.expander("🔬 Análise Avançada", expanded=False):
-        st.markdown("### 💎 Custo-Benefício")
-        cb_min = st.slider(
-            "Custo-benefício mínimo",
+    with st.sidebar.expander("⚡ Análise Avançada", expanded=False):
+        st.markdown("#### 💎 Retorno do Investimento")
+        pontos_por_cs_min = st.slider(
+            "Pontos por C$ mínimo",
             0.0,
-            float(df["Custo-Benefício"].max()),
+            float(df["Pontos por C$"].max()) if "Pontos por C$" in df.columns else 1.0,
             0.0,
-            step=0.01,
-            help="💡 Pontos por C$ investido (quanto maior, melhor)"
+            step=0.001,
+            help="💡 Eficiência do investimento"
         )
         
-        st.markdown("### ⚡ Eficiência")
-        eficiencia_min = st.slider(
-            "Eficiência mínima",
+        st.markdown("#### 🎯 Consistência")
+        consistencia_min = st.slider(
+            "Consistência mínima (%)",
             0.0,
-            float(df["Eficiência"].max()),
+            100.0,
             0.0,
-            step=0.01,
-            help="🎯 Considera média + consistência + preço"
+            step=1.0,
+            help="📊 Percentual de jogos disputados"
         )
         
-        # Resumo dos filtros
+        # Resumo dos filtros aplicados
         filtros_ativos = []
         if len(posicao_selecionada) < len(posicoes):
             filtros_ativos.append(f"{len(posicao_selecionada)} posições")
         if len(clube_selecionado) < len(clubes):
             filtros_ativos.append(f"{len(clube_selecionado)} clubes")
-        if cb_min > 0:
-            filtros_ativos.append(f"CB > {cb_min}")
-        if eficiencia_min > 0:
-            filtros_ativos.append(f"Efic > {eficiencia_min}")
+        if pontos_por_cs_min > 0:
+            filtros_ativos.append(f"Pontos/C$ > {pontos_por_cs_min:.3f}")
+        if consistencia_min > 0:
+            filtros_ativos.append(f"Consistência > {consistencia_min}%")
             
         if filtros_ativos:
-            st.info(f"🔍 **Filtros ativos:** {', '.join(filtros_ativos)}")
+            st.success(f"🔍 **{len(filtros_ativos)} filtros ativos**")
+            for filtro in filtros_ativos:
+                st.caption(f"• {filtro}")
     
     return (posicao_selecionada, clube_selecionado, preco_min, preco_max, 
-            (media_min, media_max), (partidas_min, partidas_max), cb_min, eficiencia_min)
+            (media_min, media_max), (partidas_min, partidas_max), pontos_por_cs_min, consistencia_min)
 
-def criar_metricas_principais(df: pd.DataFrame):
-    """Cria as métricas principais do dashboard"""
+def criar_metricas_principais_verde(df: pd.DataFrame):
+    """Cria métricas principais com tema verde"""
     if df.empty:
         st.warning("⚠️ Nenhum jogador encontrado com os filtros aplicados")
         return
@@ -516,39 +583,48 @@ def criar_metricas_principais(df: pd.DataFrame):
         st.metric(
             "💰 Preço Médio",
             f"C$ {preco_medio:.1f}",
-            help="Preço médio dos jogadores selecionados"
+            help="Investimento médio necessário"
         )
     
     with col3:
         pontos_medio = df['Pontos Média'].mean()
         st.metric(
-            "📊 Pontuação",
+            "📊 Pontuação Média",
             f"{pontos_medio:.1f}",
-            help="Pontuação média dos jogadores"
+            help="Performance média dos jogadores"
         )
     
     with col4:
-        cb_medio = df['Custo-Benefício'].mean()
-        st.metric(
-            "💎 Custo-Benefício",
-            f"{cb_medio:.2f}",
-            help="Pontos por C$ investido (média)"
-        )
+        if 'Pontos por C$' in df.columns:
+            retorno_medio = df['Pontos por C$'].mean()
+            st.metric(
+                "💎 Retorno Médio",
+                f"{retorno_medio:.3f}",
+                help="Pontos ganhos por C$ investido"
+            )
+        else:
+            st.metric("💎 Retorno Médio", "N/A")
     
     with col5:
-        eficiencia_media = df['Eficiência'].mean()
-        st.metric(
-            "⚡ Eficiência",
-            f"{eficiencia_media:.1f}",
-            help="Média × Partidas ÷ Preço"
-        )
+        if 'Consistência (%)' in df.columns:
+            consistencia_media = df['Consistência (%)'].mean()
+            st.metric(
+                "🎯 Consistência Média",
+                f"{consistencia_media:.1f}%",
+                help="Percentual médio de jogos disputados"
+            )
+        else:
+            st.metric("🎯 Consistência Média", "N/A")
 
-def criar_graficos_limpos(df: pd.DataFrame):
-    """Cria gráficos com fundo limpo e cores harmoniosas"""
+def criar_graficos_tema_verde(df: pd.DataFrame):
+    """Cria gráficos com paleta verde"""
     if df.empty:
         return
     
     col1, col2 = st.columns(2)
+    
+    # Paleta de cores verde personalizada
+    cores_verdes = ['#2a8c4a', '#64c27b', '#9bfab0', '#d0fdd7', '#a8e6cf', '#7fcdcd', '#81c784', '#66bb6a', '#4caf50', '#388e3c']
     
     with col1:
         st.subheader("📈 Análise Preço vs Performance")
@@ -560,9 +636,9 @@ def criar_graficos_limpos(df: pd.DataFrame):
             color="Posição",
             size="Partidas",
             hover_name="Nome",
-            hover_data=["Clube", "Custo-Benefício"],
-            title="Relação entre Preço e Pontuação",
-            color_discrete_sequence=px.colors.qualitative.Pastel1
+            hover_data=["Clube", "Pontos por C$"] if "Pontos por C$" in df.columns else ["Clube"],
+            title="Relação Investimento x Retorno",
+            color_discrete_sequence=cores_verdes
         )
         
         fig.update_traces(
@@ -584,68 +660,181 @@ def criar_graficos_limpos(df: pd.DataFrame):
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
     
     with col2:
-        st.subheader("🏆 Top Custo-Benefício")
+        st.subheader("💎 Melhor Retorno por C$")
         
-        top_cb = df.nlargest(10, 'Custo-Benefício')
-        
-        # Paleta de cores roxa personalizada
-        cores_roxas = ['#667eea', '#764ba2', '#8b5cf6', '#a855f7', '#c084fc', 
-                       '#d8b4fe', '#e879f9', '#f0abfc', '#f3e8ff', '#faf5ff']
-        
-        fig = px.bar(
-            top_cb,
-            x='Custo-Benefício',
-            y='Nome',
-            orientation='h',
-            hover_data=['Clube', 'Preço (C$)', 'Pontos Média'],
-            title="Melhor Retorno por Cartola$ Investido",
-            color='Custo-Benefício',
-            color_continuous_scale=['#f8f9fa', '#667eea']
-        )
-        
-        fig.update_layout(
-            plot_bgcolor='white',
-            paper_bgcolor='white',
-            height=500,
-            yaxis={'categoryorder': 'total ascending'},
-            coloraxis_showscale=False,
-            font=dict(family="Inter, sans-serif", size=12)
-        )
-        
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+        if "Pontos por C$" in df.columns:
+            top_retorno = df.nlargest(10, 'Pontos por C$')
+            
+            fig = px.bar(
+                top_retorno,
+                x='Pontos por C$',
+                y='Nome',
+                orientation='h',
+                hover_data=['Clube', 'Preço (C$)', 'Pontos Média'],
+                title="Jogadores com Melhor Eficiência de Investimento",
+                color='Pontos por C$',
+                color_continuous_scale=['#d0fdd7', '#2a8c4a']
+            )
+            
+            fig.update_layout(
+                plot_bgcolor='white',
+                paper_bgcolor='white',
+                height=500,
+                yaxis={'categoryorder': 'total ascending'},
+                coloraxis_showscale=False,
+                font=dict(family="Inter, sans-serif", size=12)
+            )
+            
+            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
-def criar_comparador_melhorado(df: pd.DataFrame):
-    """Comparador com selectbox pesquisável"""
+def criar_analise_acoes_especificas(df: pd.DataFrame):
+    """Cria análise das ações ofensivas e defensivas"""
     if df.empty:
         return
     
-    st.subheader("⚔️ Comparador Avançado de Jogadores")
+    st.subheader("⚽ Análise de Ações Específicas")
     
-    # Criar lista para o selectbox com informações extras
+    # Cards informativos sobre as métricas
+    st.markdown("""
+    <div class='info-card'>
+        <h4 style='color: #2a8c4a; margin-top: 0;'>📊 Entenda as Métricas de Ações</h4>
+        <div style='display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;'>
+            <div>
+                <strong>⚽ Ações Ofensivas:</strong><br>
+                • Gols: 8 pontos<br>
+                • Assistências: 5 pontos<br>
+                • Finalizações Certas: 1.2 pontos
+            </div>
+            <div>
+                <strong>🛡️ Defesa (Linha):</strong><br>
+                • Desarmes: 1.7 pontos<br>
+                • Interceptações: 1.8 pontos<br>
+                • Faltas Sofridas: 0.5 pontos
+            </div>
+            <div>
+                <strong>🥅 Defesa (Goleiro):</strong><br>
+                • Defesas Difíceis: 3.2 pontos<br>
+                • Gols Contra: -4 pontos<br>
+                • (Apenas para goleiros)
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Análises por tipo de ação
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("#### ⚽ Top Atacantes")
+        if 'Pts Ações Ofensivas' in df.columns:
+            top_ofensivos = df[df['Pts Ações Ofensivas'] > 0].nlargest(10, 'Pts Ações Ofensivas')
+            
+            if not top_ofensivos.empty:
+                fig = px.bar(
+                    top_ofensivos,
+                    x='Nome',
+                    y='Pts Ações Ofensivas',
+                    title="Pontuação em Ações Ofensivas",
+                    color='Pts Ações Ofensivas',
+                    color_continuous_scale=['#d0fdd7', '#2a8c4a']
+                )
+                fig.update_xaxes(tickangle=45)
+                fig.update_layout(
+                    plot_bgcolor='white',
+                    paper_bgcolor='white',
+                    height=400,
+                    coloraxis_showscale=False,
+                    font=dict(size=10)
+                )
+                st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+            else:
+                st.info("Nenhum jogador com ações ofensivas nos filtros atuais")
+    
+    with col2:
+        st.markdown("#### 🛡️ Top Defensores")
+        if 'Pts Def. Linha' in df.columns:
+            top_defensivos = df[df['Pts Def. Linha'] > 0].nlargest(10, 'Pts Def. Linha')
+            
+            if not top_defensivos.empty:
+                fig = px.bar(
+                    top_defensivos,
+                    x='Nome',
+                    y='Pts Def. Linha',
+                    title="Pontuação em Ações Defensivas",
+                    color='Pts Def. Linha',
+                    color_continuous_scale=['#d0fdd7', '#2a8c4a']
+                )
+                fig.update_xaxes(tickangle=45)
+                fig.update_layout(
+                    plot_bgcolor='white',
+                    paper_bgcolor='white',
+                    height=400,
+                    coloraxis_showscale=False,
+                    font=dict(size=10)
+                )
+                st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+            else:
+                st.info("Nenhum jogador com ações defensivas nos filtros atuais")
+    
+    with col3:
+        st.markdown("#### 🥅 Top Goleiros")
+        if 'Pts Def. Goleiro' in df.columns:
+            goleiros = df[df['Posição'] == 'Goleiro']
+            top_goleiros = goleiros[goleiros['Pts Def. Goleiro'] != 0].nlargest(10, 'Pts Def. Goleiro')
+            
+            if not top_goleiros.empty:
+                fig = px.bar(
+                    top_goleiros,
+                    x='Nome',
+                    y='Pts Def. Goleiro',
+                    title="Pontuação Defensiva dos Goleiros",
+                    color='Pts Def. Goleiro',
+                    color_continuous_scale=['#ff6b6b', '#2a8c4a']  # Vermelho para negativo, verde para positivo
+                )
+                fig.update_xaxes(tickangle=45)
+                fig.update_layout(
+                    plot_bgcolor='white',
+                    paper_bgcolor='white',
+                    height=400,
+                    coloraxis_showscale=False,
+                    font=dict(size=10)
+                )
+                st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+            else:
+                st.info("Nenhum goleiro com ações defensivas nos filtros atuais")
+
+def criar_comparador_melhorado_verde(df: pd.DataFrame):
+    """Comparador com tema verde e busca aprimorada"""
+    if df.empty:
+        return
+    
+    st.subheader("⚔️ Comparador Avançado")
+    
+    # Criar opções para selectbox
     opcoes_jogadores = []
     for idx, jogador in df.iterrows():
-        info = f"{jogador['Nome']} - {jogador['Clube']} ({jogador['Posição']}) - C${jogador['Preço (C$)']:.0f}"
+        info = f"{jogador['Nome']} - {jogador['Clube']} ({jogador['Posição']}) - C${jogador['Preço (C$)']:.0f} - {jogador['Status']}"
         opcoes_jogadores.append(info)
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("### 🥇 Primeiro Jogador")
+        st.markdown("#### 🥇 Primeiro Jogador")
         jogador1_info = st.selectbox(
-            "🔍 Digite para pesquisar:",
+            "🔍 Busque e selecione:",
             options=opcoes_jogadores,
-            help="Digite o nome do jogador para filtrar as opções",
-            key="jogador1"
+            help="Digite para filtrar os jogadores",
+            key="comp_jogador1"
         )
         jogador1_nome = jogador1_info.split(" - ")[0] if jogador1_info else None
     
     with col2:
-        st.markdown("### 🥈 Segundo Jogador")
+        st.markdown("#### 🥈 Segundo Jogador")
         jogador2_info = st.selectbox(
-            "🔍 Digite para pesquisar:",
+            "🔍 Busque e selecione:",
             options=opcoes_jogadores,
-            help="Digite o nome do jogador para filtrar as opções",
-            key="jogador2"
+            help="Digite para filtrar os jogadores",
+            key="comp_jogador2"
         )
         jogador2_nome = jogador2_info.split(" - ")[0] if jogador2_info else None
     
@@ -653,246 +842,117 @@ def criar_comparador_melhorado(df: pd.DataFrame):
         j1_data = df[df['Nome'] == jogador1_nome].iloc[0]
         j2_data = df[df['Nome'] == jogador2_nome].iloc[0]
         
-        # Cards informativos dos jogadores
+        # Cards dos jogadores
         col1, col2 = st.columns(2)
         
         with col1:
             st.markdown(f"""
-            <div style='background: white; padding: 1rem; border-radius: 12px; border: 2px solid #667eea; margin-bottom: 1rem;'>
-                <h4 style='color: #667eea; margin: 0;'>🥇 {j1_data['Nome']}</h4>
-                <p style='margin: 0.5rem 0; color: #666;'><strong>{j1_data['Clube']}</strong> • {j1_data['Posição']}</p>
-                <p style='margin: 0; color: #333;'>💰 C$ {j1_data['Preço (C$)']:.0f} • {j1_data['Status']}</p>
+            <div style='background: linear-gradient(145deg, #ffffff, #d0fdd7); padding: 1.5rem; border-radius: 15px; border: 2px solid #2a8c4a; margin-bottom: 1rem;'>
+                <h4 style='color: #2a8c4a; margin: 0;'>🥇 {j1_data['Nome']}</h4>
+                <p style='margin: 0.5rem 0; color: #64c27b; font-weight: 600;'>{j1_data['Clube']} • {j1_data['Posição']}</p>
+                <p style='margin: 0; color: #2a8c4a; font-weight: 500;'>💰 C$ {j1_data['Preço (C$)']:.0f} • {j1_data['Status']} • {j1_data.get('Forma Atual', 'N/A')}</p>
             </div>
             """, unsafe_allow_html=True)
         
         with col2:
             st.markdown(f"""
-            <div style='background: white; padding: 1rem; border-radius: 12px; border: 2px solid #764ba2; margin-bottom: 1rem;'>
-                <h4 style='color: #764ba2; margin: 0;'>🥈 {j2_data['Nome']}</h4>
-                <p style='margin: 0.5rem 0; color: #666;'><strong>{j2_data['Clube']}</strong> • {j2_data['Posição']}</p>
-                <p style='margin: 0; color: #333;'>💰 C$ {j2_data['Preço (C$)']:.0f} • {j2_data['Status']}</p>
+            <div style='background: linear-gradient(145deg, #ffffff, #d0fdd7); padding: 1.5rem; border-radius: 15px; border: 2px solid #64c27b; margin-bottom: 1rem;'>
+                <h4 style='color: #64c27b; margin: 0;'>🥈 {j2_data['Nome']}</h4>
+                <p style='margin: 0.5rem 0; color: #2a8c4a; font-weight: 600;'>{j2_data['Clube']} • {j2_data['Posição']}</p>
+                <p style='margin: 0; color: #2a8c4a; font-weight: 500;'>💰 C$ {j2_data['Preço (C$)']:.0f} • {j2_data['Status']} • {j2_data.get('Forma Atual', 'N/A')}</p>
             </div>
             """, unsafe_allow_html=True)
         
-        # Métricas comparativas em layout melhorado
-        st.markdown("### 📊 Comparação de Performance")
+        # Comparação de métricas principais
+        st.markdown("#### 📊 Comparação de Performance")
         
-        metricas_comparacao = {
+        metricas = {
             '💰 Preço (C$)': 'Preço (C$)',
             '📈 Pontos Média': 'Pontos Média', 
-            '💎 Custo-Benefício': 'Custo-Benefício',
+            '💎 Pontos por C$': 'Pontos por C$',
             '⚽ Partidas': 'Partidas',
-            '⚡ Eficiência': 'Eficiência'
+            '🎯 Consistência (%)': 'Consistência (%)'
         }
         
         col1, col2, col3 = st.columns(3)
         cols = [col1, col2, col3]
         
-        for i, (nome_metrica, campo) in enumerate(metricas_comparacao.items()):
-            with cols[i % 3]:
-                valor1 = j1_data[campo]
-                valor2 = j2_data[campo]
-                diferenca = valor1 - valor2
-                
-                # Determinar qual é melhor (para algumas métricas menor é melhor)
-                if campo == 'Preço (C$)':
-                    melhor = "normal" if diferenca <= 0 else "inverse"
-                else:
-                    melhor = "normal" if diferenca >= 0 else "inverse"
-                
+        for i, (nome_metrica, campo) in enumerate(metricas.items()):
+            if campo in df.columns:
+                with cols[i % 3]:
+                    valor1 = j1_data[campo]
+                    valor2 = j2_data[campo]
+                    diferenca = valor1 - valor2
+                    
+                    # Para preço, menor é melhor
+                    if campo == 'Preço (C$)':
+                        delta_color = "normal" if diferenca <= 0 else "inverse"
+                    else:
+                        delta_color = "normal" if diferenca >= 0 else "inverse"
+                    
+                    st.metric(
+                        nome_metrica,
+                        f"{valor1:.2f}" if isinstance(valor1, float) else f"{valor1}",
+                        f"{diferenca:+.2f}" if isinstance(diferenca, float) else f"{diferenca:+}",
+                        delta_color=delta_color
+                    )
+        
+        # Comparação de ações específicas
+        st.markdown("#### ⚽ Comparação de Ações Específicas")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            if 'Pts Ações Ofensivas' in df.columns:
+                of1 = j1_data['Pts Ações Ofensivas']
+                of2 = j2_data['Pts Ações Ofensivas']
                 st.metric(
-                    nome_metrica,
-                    f"{valor1:.2f}",
-                    f"{diferenca:+.2f}",
-                    delta_color=melhor
+                    "⚽ Ações Ofensivas",
+                    f"{of1:.1f}",
+                    f"{(of1-of2):+.1f}",
+                    delta_color="normal" if of1 >= of2 else "inverse"
                 )
         
-        # Gráfico radar melhorado
-        st.markdown("### 🎯 Comparação Visual")
+        with col2:
+            if 'Pts Def. Linha' in df.columns:
+                def1 = j1_data['Pts Def. Linha']
+                def2 = j2_data['Pts Def. Linha']
+                st.metric(
+                    "🛡️ Def. Linha",
+                    f"{def1:.1f}",
+                    f"{(def1-def2):+.1f}",
+                    delta_color="normal" if def1 >= def2 else "inverse"
+                )
         
-        categorias = ['Pontos Média', 'Custo-Benefício', 'Eficiência']
-        
-        # Normalizar valores
-        valores1 = []
-        valores2 = []
-        
-        for cat in categorias:
-            max_val = df[cat].max()
-            min_val = df[cat].min()
-            
-            if max_val != min_val:
-                v1_norm = 10 * (j1_data[cat] - min_val) / (max_val - min_val)
-                v2_norm = 10 * (j2_data[cat] - min_val) / (max_val - min_val)
+        with col3:
+            if j1_data['Posição'] == 'Goleiro' and j2_data['Posição'] == 'Goleiro':
+                if 'Pts Def. Goleiro' in df.columns:
+                    gol1 = j1_data['Pts Def. Goleiro']
+                    gol2 = j2_data['Pts Def. Goleiro']
+                    st.metric(
+                        "🥅 Def. Goleiro",
+                        f"{gol1:.1f}",
+                        f"{(gol1-gol2):+.1f}",
+                        delta_color="normal" if gol1 >= gol2 else "inverse"
+                    )
             else:
-                v1_norm = v2_norm = 5
-            
-            valores1.append(max(0, v1_norm))
-            valores2.append(max(0, v2_norm))
-        
-        fig = go.Figure()
-        
-        fig.add_trace(go.Scatterpolar(
-            r=valores1 + [valores1[0]],
-            theta=categorias + [categorias[0]],
-            fill='toself',
-            name=j1_data['Nome'],
-            line_color='#667eea',
-            fillcolor='rgba(102, 126, 234, 0.2)'
-        ))
-        
-        fig.add_trace(go.Scatterpolar(
-            r=valores2 + [valores2[0]],
-            theta=categorias + [categorias[0]],
-            fill='toself',
-            name=j2_data['Nome'],
-            line_color='#764ba2',
-            fillcolor='rgba(118, 75, 162, 0.2)'
-        ))
-        
-        fig.update_layout(
-            polar=dict(
-                radialaxis=dict(
-                    visible=True,
-                    range=[0, 10],
-                    gridcolor='#e1e5e9',
-                    tickcolor='#666'
-                ),
-                angularaxis=dict(
-                    gridcolor='#e1e5e9'
-                )
-            ),
-            showlegend=True,
-            title="Comparação Normalizada (0-10)",
-            height=500,
-            plot_bgcolor='white',
-            paper_bgcolor='white',
-            font=dict(family="Inter, sans-serif", size=12)
-        )
-        
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
-    else:
-        st.info("🔍 Selecione dois jogadores diferentes para começar a comparação")
-
-def criar_analise_clubes(df: pd.DataFrame):
-    """Análise por clubes com gráficos limpos"""
-    if df.empty:
-        return
-    
-    st.subheader("🏟️ Performance por Clube")
-    
-    clube_stats = df.groupby('Clube').agg({
-        'Pontos Média': ['mean', 'count'],
-        'Preço (C$)': 'mean',
-        'Custo-Benefício': 'mean'
-    }).round(2)
-    
-    clube_stats.columns = ['Pontos Médios', 'Qtd Jogadores', 'Preço Médio', 'CB Médio']
-    clube_stats = clube_stats.reset_index()
-    clube_stats = clube_stats.sort_values('Pontos Médios', ascending=False)
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("#### 🏆 Top Clubes por Pontuação")
-        fig = px.bar(
-            clube_stats.head(10),
-            x='Clube',
-            y='Pontos Médios',
-            color='CB Médio',
-            title="Pontuação Média por Clube",
-            color_continuous_scale=['#f8f9fa', '#667eea']
-        )
-        fig.update_xaxes(tickangle=45)
-        fig.update_layout(
-            plot_bgcolor='white',
-            paper_bgcolor='white',
-            coloraxis_showscale=False,
-            font=dict(family="Inter, sans-serif", size=12)
-        )
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    
-    with col2:
-        st.markdown("#### 💰 Análise Preço vs Performance")
-        fig = px.scatter(
-            clube_stats,
-            x='Preço Médio',
-            y='Pontos Médios',
-            size='Qtd Jogadores',
-            hover_name='Clube',
-            title="Custo vs Benefício por Clube",
-            color='CB Médio',
-            color_continuous_scale=['#fef7ff', '#667eea']
-        )
-        fig.update_layout(
-            plot_bgcolor='white',
-            paper_bgcolor='white',
-            coloraxis_showscale=False,
-            font=dict(family="Inter, sans-serif", size=12)
-        )
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-
-def criar_ferramentas_exportacao(df: pd.DataFrame):
-    """Ferramentas de exportação melhoradas"""
-    if df.empty:
-        return
-    
-    st.subheader("📁 Exportar Análises")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.markdown("#### 📊 Planilha Excel")
-        if st.button("📊 Gerar CSV", use_container_width=True):
-            csv = df.to_csv(index=False)
-            st.download_button(
-                label="⬇️ Download CSV",
-                data=csv,
-                file_name=f"cartola_analise_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv",
-                use_container_width=True
-            )
-    
-    with col2:
-        st.markdown("#### 📋 Dados JSON")
-        if st.button("📋 Gerar JSON", use_container_width=True):
-            json_data = df.to_json(orient='records', indent=2)
-            st.download_button(
-                label="⬇️ Download JSON",
-                data=json_data,
-                file_name=f"cartola_dados_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
-                mime="application/json",
-                use_container_width=True
-            )
-    
-    with col3:
-        st.markdown("#### 📈 Relatório")
-        if st.button("📈 Visualizar", use_container_width=True):
-            st.info("📋 **Prévia dos dados abaixo**")
-            st.dataframe(
-                df[['Nome', 'Clube', 'Posição', 'Preço (C$)', 'Pontos Média', 'Custo-Benefício']].head(20),
-                use_container_width=True
-            )
-
-# ================================
-# FUNÇÃO PRINCIPAL
-# ================================
+                st.info("Métrica apenas para goleiros")
 
 def main():
     """Função principal do dashboard"""
     
-    # Aplicar estilos
+    # Aplicar estilo verde
     aplicar_estilo_customizado()
     
-    # Header principal
+    # Header com tema verde
     st.markdown("""
-    <div style='text-align: center; padding: 2rem 0; background: white; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05);'>
-        <h1 style='color: #2d3748; font-weight: 600; margin: 0;'>⚽ Dashboard Cartola FC 2025</h1>
-        <p style='color: #666; font-size: 1.1rem; margin: 0.5rem 0 0 0;'>Análise Inteligente e Comparação de Jogadores</p>
+    <div style='text-align: center; padding: 2.5rem 0; background: linear-gradient(145deg, #ffffff, #d0fdd7); border-radius: 15px; margin-bottom: 2rem; border: 2px solid #9bfab0; box-shadow: 0 4px 12px rgba(42, 140, 74, 0.1);'>
+        <h1 style='color: #2a8c4a; font-weight: 700; margin: 0; font-size: 2.5rem;'>⚽ Dashboard Cartola FC 2025</h1>
+        <p style='color: #64c27b; font-size: 1.2rem; margin: 0.8rem 0 0 0; font-weight: 500;'>Análise Inteligente com Métricas de Futebol</p>
     </div>
     """, unsafe_allow_html=True)
     
-    # Loading state
+    # Carregamento com tema verde
     with st.spinner("🔄 Carregando dados da API do Cartola FC..."):
         df = carregar_dados_api()
     
@@ -900,12 +960,12 @@ def main():
         st.error("❌ Não foi possível carregar os dados. Tente novamente mais tarde.")
         st.stop()
     
-    # Sucesso no carregamento
-    st.success(f"✅ **{len(df)} jogadores carregados** com sucesso da API oficial!")
+    # Sucesso com tema verde
+    st.success(f"✅ **{len(df)} jogadores carregados** com sucesso! Dados atualizados da API oficial.")
     
-    # Criar filtros melhorados na sidebar
-    filtros = criar_filtros_sidebar_melhorados(df)
-    posicao_sel, clube_sel, preco_min, preco_max, media_range, partidas_range, cb_min, ef_min = filtros
+    # Filtros com tema verde
+    filtros = criar_filtros_sidebar_verde(df)
+    posicao_sel, clube_sel, preco_min, preco_max, media_range, partidas_range, pontos_cs_min, consistencia_min = filtros
     
     # Aplicar filtros
     df_filtrado = df[
@@ -916,129 +976,173 @@ def main():
         (df["Pontos Média"] >= media_range[0]) &
         (df["Pontos Média"] <= media_range[1]) &
         (df["Partidas"] >= partidas_range[0]) &
-        (df["Partidas"] <= partidas_range[1]) &
-        (df["Custo-Benefício"] >= cb_min) &
-        (df["Eficiência"] >= ef_min)
+        (df["Partidas"] <= partidas_range[1])
     ].copy()
     
+    # Filtros adicionais se as colunas existirem
+    if 'Pontos por C$' in df_filtrado.columns and pontos_cs_min > 0:
+        df_filtrado = df_filtrado[df_filtrado['Pontos por C$'] >= pontos_cs_min]
+    
+    if 'Consistência (%)' in df_filtrado.columns and consistencia_min > 0:
+        df_filtrado = df_filtrado[df_filtrado['Consistência (%)'] >= consistencia_min]
+    
     # Métricas principais
-    criar_metricas_principais(df_filtrado)
+    criar_metricas_principais_verde(df_filtrado)
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    # Tabs organizadas
+    # Tabs com tema verde
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "📊 Visão Geral", 
+        "⚽ Ações Específicas", 
         "🏆 Rankings", 
-        "🏟️ Análise de Clubes", 
         "⚔️ Comparador", 
-        "📁 Exportar Dados"
+        "📁 Exportar"
     ])
     
     with tab1:
         st.markdown("### 📈 Análise Geral dos Jogadores")
-        criar_graficos_limpos(df_filtrado)
+        criar_graficos_tema_verde(df_filtrado)
         
-        # Busca melhorada
-        st.markdown("### 🔍 Busca Inteligente")
-        col1, col2 = st.columns([3, 1])
+        # Busca aprimorada
+        st.markdown("### 🔍 Busca Rápida")
+        col1, col2 = st.columns([4, 1])
         
         with col1:
             nome_busca = st.text_input(
                 "Digite o nome do jogador:",
-                placeholder="Ex: Pedro, Hulk, Gerson...",
-                help="🔍 Busque por qualquer jogador na lista filtrada"
+                placeholder="Ex: Pedro, Hulk, Gerson, Gabigol...",
+                help="🔍 Busque qualquer jogador na lista filtrada"
             )
         
         with col2:
             st.markdown("<br>", unsafe_allow_html=True)
-            buscar = st.button("🔍 Buscar", use_container_width=True)
+            buscar = st.button("🔍 Buscar", use_container_width=True, type="primary")
         
         if nome_busca or buscar:
             df_busca = df_filtrado[
                 df_filtrado["Nome"].str.contains(nome_busca, case=False, na=False)
             ]
             if not df_busca.empty:
-                st.success(f"✅ {len(df_busca)} jogador(es) encontrado(s)")
+                st.success(f"✅ **{len(df_busca)} jogador(es) encontrado(s)** com '{nome_busca}'")
+                
+                colunas_busca = ['Nome', 'Clube', 'Posição', 'Preço (C$)', 'Pontos Média', 'Status']
+                if 'Pontos por C$' in df_busca.columns:
+                    colunas_busca.append('Pontos por C$')
+                if 'Forma Atual' in df_busca.columns:
+                    colunas_busca.append('Forma Atual')
+                    
                 st.dataframe(
-                    df_busca.sort_values("Pontos Média", ascending=False)[
-                        ['Nome', 'Clube', 'Posição', 'Preço (C$)', 'Pontos Média', 'Custo-Benefício', 'Status']
-                    ],
+                    df_busca.sort_values("Pontos Média", ascending=False)[colunas_busca],
                     use_container_width=True,
                     height=300
                 )
             else:
-                st.warning(f"❌ Nenhum jogador encontrado com '{nome_busca}'")
+                st.warning(f"❌ Nenhum jogador encontrado com '{nome_busca}' nos filtros atuais")
     
     with tab2:
-        st.markdown("### 🏆 Rankings dos Melhores Jogadores")
+        criar_analise_acoes_especificas(df_filtrado)
+    
+    with tab3:
+        st.markdown("### 🏆 Rankings dos Melhores")
         
         col1, col2 = st.columns(2)
         
         with col1:
-            st.markdown("#### 🔝 Melhores por Pontuação")
-            top_pontos = df_filtrado.nlargest(15, "Pontos Média")[
-                ['Nome', 'Clube', 'Posição', 'Pontos Média', 'Preço (C$)', 'Status']
-            ]
-            st.dataframe(top_pontos, use_container_width=True, height=400)
+            st.markdown("#### 📊 Top Pontuadores")
+            top_pontos = df_filtrado.nlargest(15, "Pontos Média")
+            colunas_ranking = ['Nome', 'Clube', 'Posição', 'Pontos Média', 'Preço (C$)', 'Status']
+            st.dataframe(top_pontos[colunas_ranking], use_container_width=True, height=400)
         
         with col2:
-            st.markdown("#### 💎 Melhores Custo-Benefício")
-            top_cb = df_filtrado.nlargest(15, "Custo-Benefício")[
-                ['Nome', 'Clube', 'Posição', 'Custo-Benefício', 'Preço (C$)', 'Tendência']
-            ]
-            st.dataframe(top_cb, use_container_width=True, height=400)
+            st.markdown("#### 💎 Melhor Custo-Benefício")
+            if 'Pontos por C$' in df_filtrado.columns:
+                top_cb = df_filtrado.nlargest(15, "Pontos por C$")
+                colunas_cb = ['Nome', 'Clube', 'Posição', 'Pontos por C$', 'Preço (C$)']
+                if 'Forma Atual' in df_filtrado.columns:
+                    colunas_cb.append('Forma Atual')
+                st.dataframe(top_cb[colunas_cb], use_container_width=True, height=400)
         
-        # Ranking por posição
-        st.markdown("#### 📍 Análise por Posição")
+        # Rankings por posição
+        st.markdown("#### 📍 Análise Detalhada por Posição")
         posicao_ranking = st.selectbox(
-            "Selecione uma posição para análise detalhada:",
-            options=df_filtrado['Posição'].unique(),
-            help="🎯 Veja o ranking detalhado de cada posição"
+            "Escolha uma posição para análise:",
+            options=sorted(df_filtrado['Posição'].unique()),
+            help="🎯 Veja os melhores jogadores de cada posição"
         )
         
         if posicao_ranking:
             df_posicao = df_filtrado[df_filtrado['Posição'] == posicao_ranking].nlargest(10, 'Pontos Média')
             
-            st.markdown(f"**Top 10 {posicao_ranking}:**")
-            st.dataframe(
-                df_posicao[['Nome', 'Clube', 'Pontos Média', 'Preço (C$)', 'Custo-Benefício', 'Eficiência', 'Status']],
-                use_container_width=True,
-                height=350
-            )
-    
-    with tab3:
-        criar_analise_clubes(df_filtrado)
+            colunas_posicao = ['Nome', 'Clube', 'Pontos Média', 'Preço (C$)', 'Status', 'Partidas']
+            if 'Pontos por C$' in df_posicao.columns:
+                colunas_posicao.insert(-1, 'Pontos por C$')
+            
+            st.markdown(f"**🏅 Top 10 {posicao_ranking}:**")
+            st.dataframe(df_posicao[colunas_posicao], use_container_width=True, height=350)
     
     with tab4:
-        criar_comparador_melhorado(df_filtrado)
+        criar_comparador_melhorado_verde(df_filtrado)
     
     with tab5:
-        criar_ferramentas_exportacao(df_filtrado)
+        st.markdown("### 📁 Exportação de Dados")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("#### 📊 Exportar Análise")
+            if st.button("📊 Gerar Planilha CSV", use_container_width=True, type="primary"):
+                csv = df_filtrado.to_csv(index=False)
+                st.download_button(
+                    label="⬇️ Download CSV Completo",
+                    data=csv,
+                    file_name=f"cartola_analise_completa_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv",
+                    use_container_width=True
+                )
+        
+        with col2:
+            st.markdown("#### 📋 Exportar Resumo")
+            if st.button("📋 Gerar Resumo JSON", use_container_width=True):
+                # Criar resumo
+                resumo = {
+                    'total_jogadores': len(df_filtrado),
+                    'data_exportacao': datetime.now().isoformat(),
+                    'top_10_pontuadores': df_filtrado.nlargest(10, 'Pontos Média')[['Nome', 'Clube', 'Pontos Média']].to_dict('records')
+                }
+                
+                json_data = json.dumps(resumo, indent=2, ensure_ascii=False)
+                st.download_button(
+                    label="⬇️ Download Resumo JSON",
+                    data=json_data,
+                    file_name=f"cartola_resumo_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json",
+                    mime="application/json",
+                    use_container_width=True
+                )
     
     # Lista completa
     st.markdown("---")
     st.markdown("### 📋 Lista Completa de Jogadores")
     
-    # Controles de visualização
+    # Controles
     col1, col2, col3, col4 = st.columns(4)
     
+    ordenacao_opcoes = ['Pontos Média', 'Preço (C$)', 'Nome', 'Partidas']
+    if 'Pontos por C$' in df_filtrado.columns:
+        ordenacao_opcoes.insert(1, 'Pontos por C$')
+    
     with col1:
-        ordenar_por = st.selectbox(
-            "📊 Ordenar por:",
-            ['Pontos Média', 'Custo-Benefício', 'Preço (C$)', 'Eficiência', 'Nome'],
-            help="Escolha o critério de ordenação"
-        )
+        ordenar_por = st.selectbox("📊 Ordenar por:", ordenacao_opcoes)
     
     with col2:
         ordem = st.selectbox("📈 Ordem:", ['Decrescente', 'Crescente'])
     
     with col3:
-        mostrar_scouts = st.checkbox("⚽ Mostrar Scouts", help="Exibir estatísticas detalhadas")
+        mostrar_acoes = st.checkbox("⚽ Mostrar Ações", help="Incluir métricas de ações específicas")
     
     with col4:
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🔄 Atualizar Lista", use_container_width=True):
+        if st.button("🔄 Atualizar", use_container_width=True):
             st.rerun()
     
     # Aplicar ordenação
@@ -1046,28 +1150,36 @@ def main():
     df_ordenado = df_filtrado.sort_values(ordenar_por, ascending=ascending)
     
     # Definir colunas
-    colunas_base = ['Nome', 'Clube', 'Posição', 'Pontos Média', 'Preço (C$)', 'Custo-Benefício', 'Partidas', 'Status', 'Tendência']
+    colunas_base = ['Nome', 'Clube', 'Posição', 'Pontos Média', 'Preço (C$)', 'Partidas', 'Status']
     
-    if mostrar_scouts:
-        scouts_cols = [col for col in df_ordenado.columns 
-                      if col not in colunas_base + ['ID', 'Foto', 'Status_Mercado', 'Eficiência', 'Valorização (%)']]
-        colunas_exibir = colunas_base + scouts_cols[:5]  # Limitar scouts para não sobrecarregar
-    else:
-        colunas_exibir = colunas_base
+    if 'Pontos por C$' in df_ordenado.columns:
+        colunas_base.insert(-2, 'Pontos por C$')
+    
+    if 'Forma Atual' in df_ordenado.columns:
+        colunas_base.append('Forma Atual')
+    
+    if mostrar_acoes:
+        if 'Pts Ações Ofensivas' in df_ordenado.columns:
+            colunas_base.append('Pts Ações Ofensivas')
+        if 'Pts Def. Linha' in df_ordenado.columns:
+            colunas_base.append('Pts Def. Linha')
+        if 'Pts Def. Goleiro' in df_ordenado.columns:
+            colunas_base.append('Pts Def. Goleiro')
     
     # Exibir tabela
     st.dataframe(
-        df_ordenado[colunas_exibir],
+        df_ordenado[colunas_base],
         use_container_width=True,
         height=600
     )
     
-    # Footer
+    # Footer com tema verde
     st.markdown("---")
     st.markdown(f"""
-    <div style='text-align: center; padding: 1rem; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);'>
-        <p style='margin: 0; color: #666;'><strong>Desenvolvido por Carlos Willian</strong> • Dashboard Cartola FC 2025 (Versão Pro)</p>
-        <p style='margin: 0.5rem 0 0 0; color: #999; font-size: 0.9rem;'>Última atualização: {datetime.now().strftime('%d/%m/%Y às %H:%M:%S')} • Dados da API oficial do Cartola FC</p>
+    <div style='text-align: center; padding: 1.5rem; background: linear-gradient(145deg, #ffffff, #d0fdd7); border-radius: 12px; border: 1px solid #9bfab0; box-shadow: 0 2px 8px rgba(42, 140, 74, 0.1);'>
+        <p style='margin: 0; color: #2a8c4a; font-weight: 600; font-size: 1.1rem;'>⚽ <strong>Desenvolvido por Carlos Willian</strong></p>
+        <p style='margin: 0.5rem 0 0 0; color: #64c27b; font-size: 0.95rem;'>Dashboard Cartola FC 2025 • Versão com Métricas de Futebol</p>
+        <p style='margin: 0.3rem 0 0 0; color: #9bfab0; font-size: 0.85rem;'>Última atualização: {datetime.now().strftime('%d/%m/%Y às %H:%M:%S')} • API oficial do Cartola FC</p>
     </div>
     """, unsafe_allow_html=True)
 
