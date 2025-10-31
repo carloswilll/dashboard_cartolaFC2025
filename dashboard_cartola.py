@@ -1,22 +1,11 @@
 """
-Cartola Data App - Versão reescrita seguindo boas práticas
-Objetivo: aplicação Streamlit modular, robusta e orientada a produção
-Principais características:
-- Código modular: config, fetch, transform, scoring, otimização, UI
-- Tratamento de erros, retries e logging
-- Cache de dados com TTL e uso de Session State para interatividade
-- Métricas relevantes: médias móveis, volatilidade, value-for-money, expectativa ponderada
-- Otimizador (PuLP) para montar escalação respeitando budget, formação e limite por clube
-- Exportação de escalação e dados
+Cartola Data App - Código completo com fallback de solver (PuLP) embutido.
+- Tenta usar PuLP para ILP. Se PuLP não instalado, usa heurística greedy.
+- App em Streamlit pronto para rodar: `streamlit run cartola_data_app_complete_fixed.py`
 
-Requisitos:
-pip install streamlit pandas numpy requests plotly pulp
-
-Uso:
-streamlit run cartola_data_app_best_practices.py
-
-Nota:
-Substitua os endpoints da API caso necessário. O app aceita também CSV local como fallback.
+Dependências:
+pip install streamlit pandas numpy requests plotly
+# PuLP é opcional. Para usar o solver ILP instale: pip install pulp
 """
 
 from typing import Dict, Tuple, Optional, List
@@ -27,33 +16,135 @@ import requests
 import time
 import logging
 from datetime import datetime
-from pulp import LpProblem, LpVariable, lpSum, LpMaximize, LpBinary, PULP_CBC_CMD
 import plotly.express as px
 
+# --------------------------- Logging ---------------------------
+logger = logging.getLogger('cartola_app_full')
+logger.setLevel(logging.INFO)
+if not logger.handlers:
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    ch.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    logger.addHandler(ch)
+
 # --------------------------- Config ---------------------------
-APP_TITLE = "Cartola Data App — Best Practices"
+APP_TITLE = "Cartola Data App — Fixed"
 API = {
     'mercado': 'https://api.cartola.globo.com/atletas/mercado',
     'status': 'https://api.cartola.globo.com/mercado/status'
 }
-CACHE_TTL = 300  # segundos
+CACHE_TTL = 300
 REQUEST_TIMEOUT = 10
 MAX_RETRIES = 3
 DEFAULT_BUDGET = 100.0
 MAX_PER_CLUB_DEFAULT = 3
 
-# --------------------------- Logging ---------------------------
-logger = logging.getLogger('cartola_app')
-logger.setLevel(logging.INFO)
-if not logger.handlers:
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.INFO)
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
+# --------------------------- Solver import / fallback ---------------------------
+PULP_AVAILABLE = False
+try:
+    from pulp import LpProblem, LpVariable, lpSum, LpMaximize, LpBinary, PULP_CBC_CMD
+    PULP_AVAILABLE = True
+    logger.info('PuLP detectado. Solver ILP ativado.')
+except Exception:
+    logger.warning('PuLP não detectado. Usando fallback heurístico para otimização. Instale "pip install pulp" para ILP.')
 
-# --------------------------- Utilitários HTTP ---------------------------
+# ILP optimizer (requires pulp)
+def optimize_lineup_ilp(df: pd.DataFrame, budget: float, formation: Dict[str,int], max_per_club: int = 3) -> Tuple[pd.DataFrame, Optional[Dict]]:
+    if df is None or df.empty:
+        return pd.DataFrame(), None
+    players = df.copy().reset_index(drop=True)
+    players['idx'] = players.index
 
+    prob = LpProblem('cartola_opt', LpMaximize)
+    x = {i: LpVariable(f'x_{i}', cat=LpBinary) for i in players['idx']}
+    c = {i: LpVariable(f'cap_{i}', cat=LpBinary) for i in players['idx']}
+
+    # objetivo
+    prob += lpSum([x[i] * players.loc[i, 'score_expect'] + c[i] * players.loc[i, 'score_expect'] for i in players['idx']])
+
+    # budget
+    prob += lpSum([x[i] * players.loc[i, 'preco'] for i in players['idx']]) <= budget
+
+    # capitão exato 1
+    prob += lpSum([c[i] for i in players['idx']]) == 1
+    for i in players['idx']:
+        prob += c[i] <= x[i]
+
+    # formação posicional (caso sensível a substrings)
+    for pos_key, qty in formation.items():
+        prob += lpSum([x[i] for i in players['idx'] if pos_key.lower() in str(players.loc[i,'posicao']).lower()]) == qty
+
+    # máximo por clube
+    clubs = players['clube'].unique().tolist()
+    for club in clubs:
+        prob += lpSum([x[i] for i in players['idx'] if players.loc[i,'clube'] == club]) <= max_per_club
+
+    solver = PULP_CBC_CMD(msg=False)
+    prob.solve(solver)
+
+    selected_idx = [i for i in players['idx'] if x[i].value() == 1]
+    captain_idx = next((i for i in players['idx'] if c[i].value() == 1), None)
+    selected = players.loc[selected_idx].copy() if selected_idx else pd.DataFrame()
+    captain = players.loc[captain_idx].to_dict() if captain_idx is not None else None
+    return selected, captain
+
+# Heuristic fallback optimizer
+def optimize_lineup_greedy(df: pd.DataFrame, budget: float, formation: Dict[str,int], max_per_club: int = 3) -> Tuple[pd.DataFrame, Optional[Dict]]:
+    if df is None or df.empty:
+        return pd.DataFrame(), None
+    players = df.copy().reset_index(drop=True)
+    # avoid zero division
+    players['preco_nonzero'] = players['preco'].replace(0, 1.0)
+    players['value'] = players['score_expect'] / players['preco_nonzero']
+
+    selected_list = []
+    for pos_key, qty in formation.items():
+        candidates = players[players['posicao'].str.lower().str.contains(pos_key.lower(), na=False)].sort_values('value', ascending=False)
+        chosen = candidates.head(qty)
+        selected_list.append(chosen)
+
+    selected = pd.concat(selected_list).drop_duplicates(subset=['player_id']).reset_index(drop=True) if selected_list else pd.DataFrame()
+
+    # enforce max per club
+    if not selected.empty:
+        while True:
+            counts = selected['clube'].value_counts()
+            over = counts[counts > max_per_club]
+            if over.empty:
+                break
+            for club, cnt in over.items():
+                exceed = cnt - max_per_club
+                to_drop = selected[selected['clube'] == club].nsmallest(exceed, 'value')
+                selected = selected.drop(to_drop.index).reset_index(drop=True)
+
+    # enforce budget
+    if not selected.empty:
+        total = selected['preco'].sum()
+        while total > budget and not selected.empty:
+            drop_idx = selected['value'].idxmin()
+            selected = selected.drop(drop_idx).reset_index(drop=True)
+            total = selected['preco'].sum()
+
+    captain = None
+    if not selected.empty:
+        cap_row = selected.loc[selected['score_expect'].idxmax()]
+        captain = cap_row.to_dict()
+
+    selected = selected.drop(columns=['preco_nonzero','value'], errors='ignore')
+    return selected, captain
+
+# Unified optimizer to call from UI
+def optimize_lineup(df: pd.DataFrame, budget: float, formation: Dict[str,int], max_per_club: int = 3) -> Tuple[pd.DataFrame, Optional[Dict]]:
+    if PULP_AVAILABLE:
+        try:
+            return optimize_lineup_ilp(df, budget, formation, max_per_club)
+        except Exception as e:
+            logger.exception('Erro no ILP solver, usando fallback: %s', e)
+            return optimize_lineup_greedy(df, budget, formation, max_per_club)
+    else:
+        return optimize_lineup_greedy(df, budget, formation, max_per_club)
+
+# --------------------------- HTTP util ---------------------------
 def get_json_with_retry(url: str, timeout: int = REQUEST_TIMEOUT, retries: int = MAX_RETRIES) -> Optional[dict]:
     for attempt in range(1, retries + 1):
         try:
@@ -61,22 +152,20 @@ def get_json_with_retry(url: str, timeout: int = REQUEST_TIMEOUT, retries: int =
             r.raise_for_status()
             return r.json()
         except requests.RequestException as e:
-            logger.warning(f"GET {url} failed attempt {attempt}/{retries}: {e}")
+            logger.warning(f"GET {url} failed ({attempt}/{retries}): {e}")
             time.sleep(0.4 * attempt)
     return None
 
-# --------------------------- ETL ---------------------------
+# --------------------------- ETL / Transform ---------------------------
 @st.cache_data(ttl=CACHE_TTL)
 def fetch_cartola_data(use_api: bool = True, csv_file: Optional[bytes] = None) -> Tuple[pd.DataFrame, Dict]:
-    """Retorna df_jogadores e status da API. Se csv_file fornecido, usa CSV como fallback."""
-    # Prioridade: CSV local (dev) -> API
     if csv_file is not None:
         try:
             df = pd.read_csv(pd.io.common.BytesIO(csv_file))
-            logger.info('Dados carregados via CSV local')
-            return transform_raw_df(df), {}
+            logger.info('Loaded data from CSV fallback')
+            return transform_df(df), {}
         except Exception as e:
-            logger.exception('Falha ao carregar CSV local: %s', e)
+            logger.exception('CSV load failed: %s', e)
             return pd.DataFrame(), {}
 
     if not use_api:
@@ -85,133 +174,67 @@ def fetch_cartola_data(use_api: bool = True, csv_file: Optional[bytes] = None) -
     mercado_json = get_json_with_retry(API['mercado'])
     status_json = get_json_with_retry(API['status'])
     if mercado_json is None:
-        logger.error('Não foi possível obter mercado_json da API')
+        logger.error('mercado_json None')
         return pd.DataFrame(), status_json or {}
 
-    # parser resiliente: 'atletas' pode ser dict ou list
     atletas = mercado_json.get('atletas')
     clubes = {str(k): v for k, v in (mercado_json.get('clubes') or {}).items()}
     posicoes = {str(k): v for k, v in (mercado_json.get('posicoes') or {}).items()}
 
     rows = []
-    if isinstance(atletas, dict):
-        iterator = atletas.items()
-    elif isinstance(atletas, list):
-        iterator = enumerate(atletas)
-    else:
-        iterator = []
-
+    iterator = atletas.items() if isinstance(atletas, dict) else enumerate(atletas or [])
     for k, atleta in iterator:
         try:
-            atleta_id = int(atleta.get('atleta_id') or k)
-            apelido = atleta.get('apelido') or f'atleta_{atleta_id}'
-            clube_id = str(atleta.get('clube_id') or '')
-            pos_id = str(atleta.get('posicao_id') or '')
             row = {
-                'player_id': atleta_id,
-                'nome': apelido,
-                'clube_id': clube_id,
-                'clube': clubes.get(clube_id, {}).get('nome', 'Desconhecido'),
-                'posicao_id': pos_id,
-                'posicao': posicoes.get(pos_id, {}).get('nome', 'Desconhecido'),
-                'preco': float(atleta.get('preco_num') or 0.0),
-                'media': float(atleta.get('media_num') or 0.0),
-                'jogos': int(atleta.get('jogos_num') or 0),
-                'status_id': atleta.get('status_id')
+                'player_id': int(atleta.get('atleta_id') or k),
+                'nome': atleta.get('apelido') or atleta.get('apelido_abreviado') or f'Jogador_{k}',
+                'clube': clubes.get(str(atleta.get('clube_id')), {}).get('nome', 'Desconhecido'),
+                'posicao': posicoes.get(str(atleta.get('posicao_id')), {}).get('nome', 'Desconhecido'),
+                'preco': float(atleta.get('preco_num') or 0),
+                'media': float(atleta.get('media_num') or 0),
+                'status': atleta.get('status_id')
             }
             scout = atleta.get('scout') or {}
             if isinstance(scout, dict):
                 for s_k, s_v in scout.items():
                     row[str(s_k).upper()] = float(s_v or 0)
             rows.append(row)
-        except Exception:
-            logger.exception('Erro ao parsear atleta %s', k)
+        except Exception as e:
+            logger.warning('Parse athlete %s failed: %s', k, e)
 
     raw_df = pd.DataFrame(rows)
-    df = transform_raw_df(raw_df)
+    df = transform_df(raw_df)
     return df, status_json or {}
 
-# --------------------------- Transformações e Features ---------------------------
-
-def transform_raw_df(df: pd.DataFrame) -> pd.DataFrame:
+def transform_df(df: pd.DataFrame) -> pd.DataFrame:
     if df is None or df.empty:
         return pd.DataFrame()
-
     df = df.copy()
-    # Normalizações básicas
-    df['preco'] = pd.to_numeric(df.get('preco', 0), errors='coerce').fillna(0.0)
-    df['media'] = pd.to_numeric(df.get('media', 0), errors='coerce').fillna(0.0)
-    df['jogos'] = pd.to_numeric(df.get('jogos', 0), errors='coerce').fillna(0).astype(int)
-    df['nome'] = df['nome'].astype(str)
-
-    # Scouts esperados - garante colunas
-    scouts_common = ['G', 'A', 'DS', 'SG', 'DD', 'FT', 'FD', 'FF']
-    for s in scouts_common:
+    # ensure columns
+    scouts_expected = ['G','A','DS','SG','DD','FT','FD','FF']
+    for s in scouts_expected:
         if s not in df.columns:
             df[s] = 0.0
-    df[scouts_common] = df[scouts_common].fillna(0.0).astype(float)
+    df[scouts_expected] = df[scouts_expected].fillna(0.0).astype(float)
 
-    # Indicadores simples
-    df['custo_beneficio'] = df.apply(lambda r: r['media'] / r['preco'] if r['preco'] > 0 else 0.0, axis=1)
-    df['indice_ofensivo'] = (df['G']*8 + df['A']*5 + df['FD']*1.2 + df['FF']*0.8 + df['FT']*3)
-    df['indice_defensivo'] = (df['DS']*1.5 + df['SG']*5 + df['DD']*3)
+    df['preco'] = pd.to_numeric(df.get('preco',0), errors='coerce').fillna(0.0)
+    df['media'] = pd.to_numeric(df.get('media',0), errors='coerce').fillna(0.0)
+    df['jogos'] = pd.to_numeric(df.get('jogos',0), errors='coerce').fillna(0).astype(int)
 
-    # Estimativas de expectativa. Simples: média ponderada e penalidade por volatilidade.
-    # Placeholder para janelas históricas se tiver dados por rodada.
-    df['score_base'] = 0.6 * df['media'] + 0.4 * df['indice_ofensivo'].where(df['posicao'].str.lower().str.contains('ataque|atacante|atac'), df['indice_defensivo'])
-    df['volatilidade'] = df[scouts_common].std(axis=1).fillna(0)
-    df['score_expect'] = (df['score_base'] - 0.2 * df['volatilidade']).clip(lower=0)
+    df['indice_ofensivo'] = df['G']*8 + df['A']*5 + df['FD']*1.2 + df['FF']*0.8 + df['FT']*3
+    df['indice_defensivo'] = df['DS']*1.5 + df['SG']*5 + df['DD']*3
+    df['custo_beneficio'] = df.apply(lambda r: r['media']/r['preco'] if r['preco']>0 else 0.0, axis=1)
 
-    # Rank e ordenações
-    df['rank_media'] = df['media'].rank(ascending=False, method='min')
+    # score base: mix de média e índice adequado por posição
+    df['score_base'] = np.where(df['posicao'].str.lower().str.contains('atac|ataque|avanc'),
+                                0.5*df['media'] + 0.5*df['indice_ofensivo'],
+                                0.6*df['media'] + 0.4*df['indice_defensivo'])
+    df['volatilidade'] = df[scouts_expected].std(axis=1).fillna(0.0)
+    df['score_expect'] = (df['score_base'] - 0.2*df['volatilidade']).clip(lower=0.0)
+
     df.sort_values(by='score_expect', ascending=False, inplace=True)
     df.reset_index(drop=True, inplace=True)
     return df
-
-# --------------------------- Otimizador (ILP) ---------------------------
-
-def optimize_lineup(df: pd.DataFrame, budget: float, formation: Dict[str,int], max_per_club: int = MAX_PER_CLUB_DEFAULT) -> Tuple[pd.DataFrame, Optional[Dict]]:
-    # Precondição
-    if df.empty:
-        return pd.DataFrame(), None
-
-    players = df.copy().reset_index(drop=True)
-    players['idx'] = players.index
-
-    prob = LpProblem('cartola_opt', LpMaximize)
-    x = {i: LpVariable(f'x_{i}', cat=LpBinary) for i in players['idx']}
-    c = {i: LpVariable(f'cap_{i}', cat=LpBinary) for i in players['idx']}
-
-    # objetivo: soma de score_expect + capitão adicional
-    prob += lpSum([x[i] * players.loc[i, 'score_expect'] + c[i] * players.loc[i, 'score_expect'] for i in players['idx']])
-
-    # orçamento
-    prob += lpSum([x[i] * players.loc[i, 'preco'] for i in players['idx']]) <= budget
-
-    # capitão exatamente um e capitão implica selecionado
-    prob += lpSum([c[i] for i in players['idx']]) == 1
-    for i in players['idx']:
-        prob += c[i] <= x[i]
-
-    # formação posicional (posicao deve bater com colunas usadas no df)
-    for pos, qty in formation.items():
-        prob += lpSum([x[i] for i in players['idx'] if pos.lower() in str(players.loc[i, 'posicao']).lower()]) == qty
-
-    # max por clube
-    clubs = players['clube'].unique().tolist()
-    for club in clubs:
-        prob += lpSum([x[i] for i in players['idx'] if players.loc[i, 'clube'] == club]) <= max_per_club
-
-    # solve
-    solver = PULP_CBC_CMD(msg=False)
-    prob.solve(solver)
-
-    selected_idx = [i for i in players['idx'] if x[i].value() == 1]
-    captain_idx = next((i for i in players['idx'] if c[i].value() == 1), None)
-
-    selected = players.loc[selected_idx].copy() if selected_idx else pd.DataFrame()
-    captain = players.loc[captain_idx].to_dict() if captain_idx is not None else None
-    return selected, captain
 
 # --------------------------- UI ---------------------------
 
@@ -222,11 +245,9 @@ def setup_page():
 def sidebar_controls(df: pd.DataFrame) -> Dict:
     st.sidebar.header('Configurações')
     use_api = st.sidebar.checkbox('Usar API oficial (Cartola)', value=True)
-    csv_file = st.sidebar.file_uploader('CSV de fallback (formatado)', type=['csv'])
-
+    csv_file = st.sidebar.file_uploader('CSV de fallback (opcional)', type=['csv'])
     budget = st.sidebar.number_input('Budget (C$)', value=DEFAULT_BUDGET, min_value=10.0)
     max_per_club = st.sidebar.number_input('Máx por clube', value=MAX_PER_CLUB_DEFAULT, min_value=1)
-
     formation_choice = st.sidebar.selectbox('Formação padrão', ['4-4-2','3-5-2','4-3-3'])
     formation_map = {
         '4-4-2': {'GOL':1, 'DEF':4, 'MEI':4, 'ATA':2},
@@ -234,14 +255,12 @@ def sidebar_controls(df: pd.DataFrame) -> Dict:
         '4-3-3': {'GOL':1, 'DEF':4, 'MEI':3, 'ATA':3}
     }
 
-    # filtros dinâmicos
-    posicoes = sorted(df['posicao'].unique().astype(str)) if not df.empty else []
-    pos_select = st.sidebar.multiselect('Posições', options=posicoes, default=posicoes)
-    clubes = sorted(df['clube'].unique().astype(str)) if not df.empty else []
-    club_select = st.sidebar.multiselect('Clubes', options=clubes, default=clubes)
-
-    status_options = sorted(df['status_id'].unique().astype(str)) if not df.empty else []
-    status_select = st.sidebar.multiselect('Status ID', options=status_options, default=status_options)
+    pos_options = sorted(df['posicao'].dropna().unique().tolist()) if not df.empty else []
+    pos_sel = st.sidebar.multiselect('Posições', options=pos_options, default=pos_options)
+    club_options = sorted(df['clube'].dropna().unique().tolist()) if not df.empty else []
+    club_sel = st.sidebar.multiselect('Clubes', options=club_options, default=club_options)
+    status_options = sorted(df['status'].dropna().unique().tolist()) if not df.empty else []
+    status_sel = st.sidebar.multiselect('Status', options=status_options, default=status_options)
 
     return {
         'use_api': use_api,
@@ -249,97 +268,84 @@ def sidebar_controls(df: pd.DataFrame) -> Dict:
         'budget': budget,
         'max_per_club': max_per_club,
         'formation': formation_map[formation_choice],
-        'pos_select': pos_select,
-        'club_select': club_select,
-        'status_select': status_select
+        'pos_sel': pos_sel,
+        'club_sel': club_sel,
+        'status_sel': status_sel
     }
 
 def main():
     setup_page()
-    st.sidebar.markdown('Data App para escalar jogadores no Cartola. Boas práticas aplicadas.')
+    st.sidebar.markdown('Data App para escalar jogadores no Cartola. Fallback de solver incluso.')
 
-    controls = sidebar_controls(pd.DataFrame())
-
-    # carregamento com fallback
-    df, status = fetch_cartola_data(use_api=controls['use_api'], csv_file=controls['csv_file'])
+    # initial controls to allow CSV upload before fetch
+    initial_controls = sidebar_controls(pd.DataFrame())
+    df, status = fetch_cartola_data(use_api=initial_controls['use_api'], csv_file=initial_controls['csv_file'])
     if df.empty:
-        st.error('Sem dados disponíveis. Verifique API ou faça upload de CSV.')
+        st.error('Sem dados. Verifique API ou faça upload de CSV.')
         st.stop()
 
-    # re-exibir controles agora que df existe (para filtros dinâmicos corretos)
     controls = sidebar_controls(df)
 
-    # aplicar filtros simples
+    # apply filters
     df_filtered = df[
-        df['posicao'].isin(controls['pos_select']) &
-        df['clube'].isin(controls['club_select']) &
-        df['status_id'].astype(str).isin(controls['status_select'])
+        df['posicao'].isin(controls['pos_sel']) &
+        df['clube'].isin(controls['club_sel']) &
+        df['status'].astype(str).isin([str(s) for s in controls['status_sel']])
     ].copy()
 
-    # Layout principal
     tabs = st.tabs(['Visão Geral','Otimização','Análise Avançada','Dados'])
 
-    # Visão Geral
     with tabs[0]:
         st.header('Visão Geral')
-        col1, col2, col3 = st.columns(3)
-        col1.metric('Jogadores', f"{len(df_filtered):,}")
-        col2.metric('Preço médio (C$)', f"{df_filtered['preco'].mean():.2f}")
-        col3.metric('Pontos médios', f"{df_filtered['media'].mean():.2f}")
+        c1, c2, c3 = st.columns(3)
+        c1.metric('Jogadores', f"{len(df_filtered):,}")
+        c2.metric('Preço médio (C$)', f"{df_filtered['preco'].mean():.2f}")
+        c3.metric('Pontos médios', f"{df_filtered['media'].mean():.2f}")
 
-        st.markdown('### Top 20 por Score Esperado')
+        st.markdown('### Top por Score Esperado')
         st.dataframe(df_filtered[['nome','clube','posicao','preco','media','score_expect']].head(20))
-
         st.markdown('### Scatter: Preço x Score Esperado')
         fig = px.scatter(df_filtered, x='preco', y='score_expect', color='posicao', hover_name='nome', size='media', template='plotly_dark')
         st.plotly_chart(fig, use_container_width=True)
 
-    # Otimização
     with tabs[1]:
         st.header('Otimização de Escalação')
-        st.markdown('Defina constraints e gere escalação ótima pelo solver (ILP).')
+        st.markdown('Defina constraints e gere escalação ótima (ILP se PuLP instalado ou heurística fallback).')
         budget = controls['budget']
         max_per_club = controls['max_per_club']
         formation = controls['formation']
 
         if st.button('Gerar escalação otimizada'):
-            selected, captain = optimize_lineup(df_filtered, budget=budget, formation=formation, max_per_club=max_per_club)
-            if selected.empty:
-                st.warning('Solver não retornou escalação. Ajuste budget/formation.')
+            selected, captain = optimize_lineup(df_filtered, budget, formation, max_per_club)
+            if selected is None or selected.empty:
+                st.warning('Solver não retornou escalação. Ajuste parâmetros.')
             else:
                 st.markdown('### Escalação sugerida')
                 st.table(selected[['nome','clube','posicao','preco','score_expect']])
                 if captain:
                     st.info(f"Capitão sugerido: {captain.get('nome')} — Score: {captain.get('score_expect'):.2f}")
-                # export
                 csv = selected.to_csv(index=False).encode('utf-8')
-                st.download_button('Baixar escalação CSV', data=csv, file_name=f'escalação_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv')
+                st.download_button('Baixar escalação (CSV)', data=csv, file_name=f'escalação_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv')
 
-    # Análise Avançada
     with tabs[2]:
         st.header('Análise Avançada')
         st.markdown("""
-- Índices ofensivos e defensivos
-- Top por custo-benefício
-- Volatilidade e consistência
-""")
-
+        - Índices ofensivos e defensivos
+        - Top por custo-benefício
+        - Volatilidade e consistência
+        """)
         st.markdown('### Top 10 custo-benefício')
         st.dataframe(df_filtered.nlargest(10, 'custo_beneficio')[['nome','clube','posicao','preco','media','custo_beneficio']])
-
         st.markdown('### Distribuição de Scores')
         fig = px.histogram(df_filtered, x='score_expect', nbins=30, template='plotly_dark')
         st.plotly_chart(fig, use_container_width=True)
 
-    # Dados completos
     with tabs[3]:
         st.header('Dados')
         st.dataframe(df_filtered, use_container_width=True)
         csv = df_filtered.to_csv(index=False).encode('utf-8')
         st.download_button('Baixar dados filtrados (CSV)', data=csv, file_name=f'cartola_dados_{datetime.now().strftime("%Y%m%d")}.csv')
 
-# --------------------------- Entrypoint ---------------------------
 if __name__ == '__main__':
     main()
-
 
