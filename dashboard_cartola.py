@@ -69,50 +69,56 @@ def aplicar_design_dark_mode() -> None:
 # -------------------- ETL e processamento --------------------
 
 @st.cache_data(ttl=CACHE_TTL)
+# substitua a versão antiga por esta
 def carregar_dados_api() -> Tuple[pd.DataFrame, Dict]:
-    """Carrega dados do mercado e status da API do Cartola.
-    Retorna (df_jogadores, status_data).
-    Em caso de falha retorna (empty_df, {}).
-    """
-    status_json = requests_get_with_retry(API_URLS['status'])
-    mercado_json = requests_get_with_retry(API_URLS['mercado'])
+    try:
+        mercado_json = requests_get_with_retry(API_URLS['mercado'])
+        status_json = requests_get_with_retry(API_URLS['status'])
+        atletas = mercado_json.get('atletas') if mercado_json else None
+        clubes = {str(k): v for k, v in (mercado_json.get('clubes') or {}).items()} if mercado_json else {}
+        posicoes = {str(k): v for k, v in (mercado_json.get('posicoes') or {}).items()} if mercado_json else {}
 
-    if mercado_json is None:
+        rows = []
+        if isinstance(atletas, dict):
+            iterator = atletas.items()
+        elif isinstance(atletas, list):
+            iterator = enumerate(atletas)
+        else:
+            iterator = []
+
+        for k, atleta in iterator:
+            try:
+                atleta_id = int(atleta.get('atleta_id') or k)
+                apelido = atleta.get('apelido') or atleta.get('apelido_abreviado') or f"Atleta_{atleta_id}"
+                clube_id = str(atleta.get('clube_id'))
+                pos_id = str(atleta.get('posicao_id'))
+
+                row = {
+                    'ID': atleta_id,
+                    'Nome': apelido,
+                    'Clube': clubes.get(clube_id, {}).get('nome', 'Desconhecido'),
+                    'Posição': posicoes.get(pos_id, {}).get('nome', 'Desconhecido'),
+                    'Preço (C$)': float(atleta.get('preco_num') or 0),
+                    'Pontos Média': float(atleta.get('media_num') or 0),
+                    'Partidas': int(atleta.get('jogos_num') or 0),
+                    'Status Raw': atleta.get('status_id')
+                }
+
+                scout = atleta.get('scout') or {}
+                for s_key, s_val in (scout.items() if isinstance(scout, dict) else []):
+                    row[str(s_key).upper()] = float(s_val or 0)
+
+                rows.append(row)
+            except Exception:
+                logger.exception(f"Erro processando atleta {k}")
+
+        df = pd.DataFrame(rows)
+        df = calcular_metricas(df)
+        return df, status_json or {}
+
+    except Exception:
+        logger.exception('Erro geral em carregar_dados_api')
         return pd.DataFrame(), status_json or {}
-
-    atletas = mercado_json.get('atletas') or {}
-    clubes = {str(k): v for k, v in (mercado_json.get('clubes') or {}).items()}
-    posicoes = {str(k): v for k, v in (mercado_json.get('posicoes') or {}).items()}
-
-    rows = []
-    for k, atleta in (atletas or {}).items():
-        try:
-            # Campos principais com fallback seguro
-            atleta_id = int(atleta.get('atleta_id') or k)
-            apelido = atleta.get('apelido') or atleta.get('apelido_abreviado') or f"Atleta_{atleta_id}"
-            clube_id = str(atleta.get('clube_id'))
-            pos_id = str(atleta.get('posicao_id'))
-
-            row = {
-                'ID': atleta_id,
-                'Nome': apelido,
-                'Clube': clubes.get(clube_id, {}).get('nome', 'Desconhecido'),
-                'Posição': posicoes.get(pos_id, {}).get('nome', 'Desconhecido'),
-                'Preço (C$)': float(atleta.get('preco_num') or 0),
-                'Pontos Média': float(atleta.get('media_num') or 0),
-                'Partidas': int(atleta.get('jogos_num') or 0),
-                'Status Raw': atleta.get('status_id')
-            }
-
-            # Agregar scouts se existirem. Alguns APIs trazem dict 'scout' com chaves variadas.
-            scout = atleta.get('scout') or {}
-            for s_key, s_val in scout.items():
-                # normaliza nomes simples (letras maiúsculas sem espaços)
-                row[str(s_key).upper()] = float(s_val or 0)
-
-            rows.append(row)
-        except Exception as e:
-            logger.exception(f"Erro processando atleta {k}: {e}")
 
     df = pd.DataFrame(rows)
     df = calcular_metricas(df)
@@ -291,3 +297,4 @@ def main() -> None:
 
 if __name__ == '__main__':
     main()
+
