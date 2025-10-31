@@ -318,9 +318,12 @@ def main():
     # Análise Avançada
     with tabs[2]:
         st.header('Análise Avançada')
-        st.markdown('- Índices ofensivos e defensivos
+        st.markdown("""
+- Índices ofensivos e defensivos
 - Top por custo-benefício
-- Volatilidade e consistência')
+- Volatilidade e consistência
+""")
+
         st.markdown('### Top 10 custo-benefício')
         st.dataframe(df_filtered.nlargest(10, 'custo_beneficio')[['nome','clube','posicao','preco','media','custo_beneficio']])
 
@@ -338,4 +341,5 @@ def main():
 # --------------------------- Entrypoint ---------------------------
 if __name__ == '__main__':
     main()
+
 
