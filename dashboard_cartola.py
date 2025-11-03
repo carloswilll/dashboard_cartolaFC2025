@@ -210,31 +210,51 @@ def transform_df(df: pd.DataFrame) -> pd.DataFrame:
     if df is None or df.empty:
         return pd.DataFrame()
     df = df.copy()
-    # ensure columns
+
+    # garantir scouts esperados
     scouts_expected = ['G','A','DS','SG','DD','FT','FD','FF']
     for s in scouts_expected:
         if s not in df.columns:
             df[s] = 0.0
     df[scouts_expected] = df[scouts_expected].fillna(0.0).astype(float)
 
-    df['preco'] = pd.to_numeric(df.get('preco',0), errors='coerce').fillna(0.0)
-    df['media'] = pd.to_numeric(df.get('media',0), errors='coerce').fillna(0.0)
-    df['jogos'] = pd.to_numeric(df.get('jogos',0), errors='coerce').fillna(0).astype(int)
+    # garantir colunas numéricas como Series (evita retorno escalar)
+    if 'preco' not in df.columns:
+        df['preco'] = 0.0
+    else:
+        df['preco'] = pd.to_numeric(df['preco'], errors='coerce').fillna(0.0)
 
+    if 'media' not in df.columns:
+        df['media'] = 0.0
+    else:
+        df['media'] = pd.to_numeric(df['media'], errors='coerce').fillna(0.0)
+
+    # trata 'jogos' explicitamente como Series
+    if 'jogos' not in df.columns:
+        df['jogos'] = 0
+    else:
+        df['jogos'] = pd.to_numeric(df['jogos'], errors='coerce').fillna(0).astype(int)
+
+    # features derivadas
     df['indice_ofensivo'] = df['G']*8 + df['A']*5 + df['FD']*1.2 + df['FF']*0.8 + df['FT']*3
     df['indice_defensivo'] = df['DS']*1.5 + df['SG']*5 + df['DD']*3
-    df['custo_beneficio'] = df.apply(lambda r: r['media']/r['preco'] if r['preco']>0 else 0.0, axis=1)
 
-    # score base: mix de média e índice adequado por posição
-    df['score_base'] = np.where(df['posicao'].str.lower().str.contains('atac|ataque|avanc'),
-                                0.5*df['media'] + 0.5*df['indice_ofensivo'],
-                                0.6*df['media'] + 0.4*df['indice_defensivo'])
+    df['custo_beneficio'] = df.apply(lambda r: (r['media']/r['preco']) if r['preco'] > 0 else 0.0, axis=1)
+
+    # score base por posição
+    df['score_base'] = np.where(
+        df['posicao'].str.lower().str.contains('atac|ataque|avanc', na=False),
+        0.5*df['media'] + 0.5*df['indice_ofensivo'],
+        0.6*df['media'] + 0.4*df['indice_defensivo']
+    )
+
     df['volatilidade'] = df[scouts_expected].std(axis=1).fillna(0.0)
     df['score_expect'] = (df['score_base'] - 0.2*df['volatilidade']).clip(lower=0.0)
 
     df.sort_values(by='score_expect', ascending=False, inplace=True)
     df.reset_index(drop=True, inplace=True)
     return df
+
 
 # --------------------------- UI ---------------------------
 
@@ -348,4 +368,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
